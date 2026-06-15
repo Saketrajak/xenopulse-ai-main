@@ -223,8 +223,8 @@ export default function CampaignsPage() {
                     {[
                       { label: 'Sent',      count: analytics.sent,      color: '#94A3B8', pct: 100 },
                       { label: 'Delivered', count: analytics.delivered, color: '#2563EB', pct: analytics.delivery_rate   },
-                      { label: 'Opened',    count: analytics.opened,    color: '#8B5CF6', pct: analytics.open_rate       },
-                      { label: 'Clicked',   count: analytics.clicked,   color: '#10B981', pct: analytics.ctr             },
+                      { label: 'Opened',    count: analytics.opened,    color: '#8B5CF6', pct: analytics.sent ? Number((analytics.opened / analytics.sent * 100).toFixed(2)) : 0 },
+                      { label: 'Clicked',   count: analytics.clicked,   color: '#10B981', pct: analytics.sent ? Number((analytics.clicked / analytics.sent * 100).toFixed(2)) : 0 },
                       { label: 'Converted', count: analytics.converted, color: '#F59E0B', pct: analytics.conversion_rate },
                     ].map(({ label, count, color, pct }) => (
                       <div key={label} className="funnel-row">

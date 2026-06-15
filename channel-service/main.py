@@ -19,7 +19,7 @@ class SendRequest(BaseModel):
 
 
 MAX_RETRIES = 3
-DELIVERY_SUCCESS_RATE = 0.05
+DELIVERY_SUCCESS_RATE = 0.95
 
 
 def send_callback(
@@ -70,7 +70,7 @@ def simulate_lifecycle(data):
             f"Retry {retry_count} for Communication {communication_id}"
         )
 
-        time.sleep(1)
+        time.sleep(0.2)
 
     if not delivered:
 
@@ -92,21 +92,24 @@ def simulate_lifecycle(data):
 
     lifecycle_events = ["DELIVERED"]
 
-    if random.random() < 0.70:
+    # Open rate (of delivered): 60%
+    if random.random() < 0.60:
 
         lifecycle_events.append("OPENED")
 
-        if random.random() < 0.30:
+        # Click rate (of opened): 20%
+        if random.random() < 0.20:
 
             lifecycle_events.append("CLICKED")
 
+            # Conversion rate (of clicked): 15%
             if random.random() < 0.15:
 
                 lifecycle_events.append("CONVERTED")
 
     for status in lifecycle_events:
 
-        time.sleep(2)
+        time.sleep(0.5)
 
         send_callback(
             communication_id,
