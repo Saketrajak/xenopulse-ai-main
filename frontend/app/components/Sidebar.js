@@ -30,6 +30,17 @@ const navItems = [
 export default function Sidebar() {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [recentChats, setRecentChats] = useState([]);
+  const [currentChatId, setCurrentChatId] = useState(null);
+
+  const loadRecentChats = () => {
+    if (typeof window !== 'undefined') {
+      const chats = JSON.parse(sessionStorage.getItem('xp_recent_chats') || '[]');
+      const activeId = sessionStorage.getItem('xp_current_chat_id');
+      setRecentChats(chats);
+      setCurrentChatId(activeId);
+    }
+  };
 
   // Auto-close sidebar on route change (mobile)
   useEffect(() => {
@@ -45,6 +56,16 @@ export default function Sidebar() {
     }
     return () => { document.body.style.overflow = ''; };
   }, [mobileOpen]);
+
+  // Sync recent chats on mount & update events
+  useEffect(() => {
+    loadRecentChats();
+
+    window.addEventListener('xp_recent_chats_updated', loadRecentChats);
+    return () => {
+      window.removeEventListener('xp_recent_chats_updated', loadRecentChats);
+    };
+  }, []);
 
   return (
     <>
@@ -100,6 +121,37 @@ export default function Sidebar() {
             );
           })}
         </nav>
+
+        {/* Recent Chats Section */}
+        {recentChats.length > 0 && (
+          <div className="recent-chats-section">
+            <div className="recent-chats-header">Recent Chats</div>
+            <div className="recent-chats-list">
+              {recentChats.map((chat) => {
+                const active = currentChatId === chat.id && pathname === '/';
+                return (
+                  <Link
+                    key={chat.id}
+                    href="/"
+                    onClick={() => {
+                      if (typeof window !== 'undefined') {
+                        sessionStorage.setItem('xp_current_chat_id', chat.id);
+                        window.dispatchEvent(new Event('xp_recent_chats_updated'));
+                        window.dispatchEvent(new Event('xp_active_chat_changed'));
+                      }
+                    }}
+                    className={`recent-chat-item${active ? ' active' : ''}`}
+                  >
+                    <span className="recent-chat-icon">💬</span>
+                    <span className="recent-chat-title" title={chat.title}>
+                      {chat.title}
+                    </span>
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         {/* AI Status */}
         <div className="sidebar-footer">

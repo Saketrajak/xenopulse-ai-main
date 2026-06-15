@@ -571,69 +571,103 @@ export default function WorkspacePage() {
     return () => clearInterval(interval);
   }, [loading, loadingType]);
 
-  // Load from sessionStorage on mount
-  useEffect(() => {
+  // Load active chat from sessionStorage
+  const loadActiveChat = () => {
     if (typeof window !== 'undefined') {
-      const storedMessages = sessionStorage.getItem('xp_chat_messages');
-      const storedSummary = sessionStorage.getItem('xp_chat_summary');
-      const storedPhase = sessionStorage.getItem('xp_chat_phase');
-      const storedDraftPayload = sessionStorage.getItem('xp_chat_draft_payload');
-      const storedClassifiedGoal = sessionStorage.getItem('xp_chat_classified_goal');
+      let activeId = sessionStorage.getItem('xp_current_chat_id');
+      if (!activeId) {
+        activeId = Date.now().toString();
+        sessionStorage.setItem('xp_current_chat_id', activeId);
+      }
+      
+      const chats = JSON.parse(sessionStorage.getItem('xp_recent_chats') || '[]');
+      const activeChat = chats.find(c => c.id === activeId);
 
-      if (storedMessages) setMessages(JSON.parse(storedMessages));
-      if (storedSummary) setSummary(JSON.parse(storedSummary));
-      if (storedPhase) setPhase(storedPhase);
-      if (storedDraftPayload) setDraftPayload(JSON.parse(storedDraftPayload));
-      if (storedClassifiedGoal) setClassifiedGoal(storedClassifiedGoal);
+      if (activeChat) {
+        setMessages(activeChat.messages || []);
+        setSummary(activeChat.summary || { goal: null, insight: null, strategy: null, campaign: null });
+        setPhase(activeChat.phase || 'INITIAL');
+        setDraftPayload(activeChat.draftPayload || null);
+        setClassifiedGoal(activeChat.classifiedGoal || 'WINBACK');
+      } else {
+        setMessages([]);
+        setSummary({ goal: null, insight: null, strategy: null, campaign: null });
+        setPhase('INITIAL');
+        setDraftPayload(null);
+        setClassifiedGoal('WINBACK');
+      }
       
       setIsLoaded(true);
     }
+  };
+
+  // Run on mount
+  useEffect(() => {
+    loadActiveChat();
+
+    window.addEventListener('xp_active_chat_changed', loadActiveChat);
+    return () => {
+      window.removeEventListener('xp_active_chat_changed', loadActiveChat);
+    };
   }, []);
 
-  // Save to sessionStorage when states change
+  // Save active chat to sessionStorage collection when state changes
   useEffect(() => {
-    if (isLoaded) {
-      sessionStorage.setItem('xp_chat_messages', JSON.stringify(messages));
-    }
-  }, [messages, isLoaded]);
+    if (isLoaded && messages.length > 0) {
+      const activeId = sessionStorage.getItem('xp_current_chat_id') || Date.now().toString();
+      sessionStorage.setItem('xp_current_chat_id', activeId);
 
-  useEffect(() => {
-    if (isLoaded) {
-      sessionStorage.setItem('xp_chat_summary', JSON.stringify(summary));
-    }
-  }, [summary, isLoaded]);
+      const chats = JSON.parse(sessionStorage.getItem('xp_recent_chats') || '[]');
 
-  useEffect(() => {
-    if (isLoaded) {
-      sessionStorage.setItem('xp_chat_phase', phase);
-    }
-  }, [phase, isLoaded]);
+      // Determine chat display title
+      let title = "New Chat";
+      if (summary.goal) {
+        title = summary.goal;
+      } else {
+        const firstUserMsg = messages.find(m => m.type === 'user');
+        if (firstUserMsg) {
+          title = firstUserMsg.text.length > 28 ? firstUserMsg.text.slice(0, 25) + '...' : firstUserMsg.text;
+        }
+      }
 
-  useEffect(() => {
-    if (isLoaded) {
-      sessionStorage.setItem('xp_chat_draft_payload', JSON.stringify(draftPayload));
-    }
-  }, [draftPayload, isLoaded]);
+      const updatedChats = [...chats];
+      const index = updatedChats.findIndex(c => c.id === activeId);
+      const chatData = {
+        id: activeId,
+        title,
+        messages,
+        summary,
+        phase,
+        draftPayload,
+        classifiedGoal,
+        timestamp: Date.now()
+      };
 
-  useEffect(() => {
-    if (isLoaded) {
-      sessionStorage.setItem('xp_chat_classified_goal', classifiedGoal);
+      if (index >= 0) {
+        updatedChats[index] = chatData;
+      } else {
+        updatedChats.unshift(chatData);
+      }
+
+      sessionStorage.setItem('xp_recent_chats', JSON.stringify(updatedChats));
+      window.dispatchEvent(new Event('xp_recent_chats_updated'));
     }
-  }, [classifiedGoal, isLoaded]);
+  }, [messages, summary, phase, draftPayload, classifiedGoal, isLoaded]);
 
   const handleResetChat = () => {
     if (typeof window !== 'undefined') {
-      sessionStorage.removeItem('xp_chat_messages');
-      sessionStorage.removeItem('xp_chat_summary');
-      sessionStorage.removeItem('xp_chat_phase');
-      sessionStorage.removeItem('xp_chat_draft_payload');
-      sessionStorage.removeItem('xp_chat_classified_goal');
+      const newId = Date.now().toString();
+      sessionStorage.setItem('xp_current_chat_id', newId);
+      
+      setMessages([]);
+      setSummary({ goal: null, insight: null, strategy: null, campaign: null });
+      setPhase('INITIAL');
+      setDraftPayload(null);
+      setClassifiedGoal('WINBACK');
+
+      window.dispatchEvent(new Event('xp_recent_chats_updated'));
+      window.dispatchEvent(new Event('xp_active_chat_changed'));
     }
-    setMessages([]);
-    setSummary({ goal: null, insight: null, strategy: null, campaign: null });
-    setPhase('INITIAL');
-    setDraftPayload(null);
-    setClassifiedGoal('WINBACK');
   };
 
   useEffect(() => {
