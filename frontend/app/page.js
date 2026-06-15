@@ -32,7 +32,7 @@ function TypingIndicator() {
     <div className="msg-row ai anim-fadeIn">
       <div className="ai-avatar">
         <svg viewBox="0 0 24 24" fill="white">
-          <path d="M13.6 12L20 4H17.5L12.4 9.8 8.1 4H2L8.7 13.3 2 22H4.5L10 15.8 14.6 22H21L13.6 12ZM5.4 5.8H7.2L17.6 20.3H15.8L5.4 5.8Z"/>
+          <path d="M13.6 12L20 4H17.5L12.4 9.8 8.1 4H2L8.7 13.3 2 22H4.5L10 15.8 14.6 22H21L13.6 12ZM5.4 5.8H7.2L17.6 20.3H15.8L5.4 5.8Z" />
         </svg>
       </div>
       <div className="msg-bubble ai">
@@ -50,9 +50,95 @@ function TypingIndicator() {
 
 function UserMessage({ text }) {
   return (
-    <div className="msg-row user anim-fadeUp">
+    <div className="msg-row user msg-slide-right">
       <div className="msg-bubble user">
         <div className="bubble-body">{text}</div>
+      </div>
+    </div>
+  );
+}
+
+function CampaignLaunchProgress({ campaignId, channel, onComplete }) {
+  const [progress, setProgress] = useState(null);
+  const [error, setError] = useState(false);
+  const logContainerRef = useRef(null);
+
+  useEffect(() => {
+    let interval;
+    const fetchProgress = async () => {
+      try {
+        const res = await api.getCampaignProgress(campaignId);
+        setProgress(res);
+        if (res.status === 'COMPLETED' || res.completed >= res.total) {
+          clearInterval(interval);
+          if (onComplete) onComplete(res);
+        }
+      } catch (err) {
+        console.error('Error fetching campaign progress:', err);
+        setError(true);
+      }
+    };
+
+    fetchProgress();
+    interval = setInterval(fetchProgress, 1000); // 1-second polling to minimize backend load
+
+    return () => clearInterval(interval);
+  }, [campaignId]);
+
+  useEffect(() => {
+    if (logContainerRef.current) {
+      logContainerRef.current.scrollTop = logContainerRef.current.scrollHeight;
+    }
+  }, [progress?.logs?.length]);
+
+  if (error) {
+    return (
+      <div className="progress-error" style={{ color: 'var(--red)', fontSize: 12, marginTop: 10 }}>
+        ⚠️ Failed to fetch campaign progress.
+      </div>
+    );
+  }
+
+  if (!progress) {
+    return (
+      <div className="progress-initializing">
+        <div className="progress-spinner" />
+        <span>Initializing campaign broadcast...</span>
+      </div>
+    );
+  }
+
+  const pct = progress.total > 0 ? Math.round((progress.completed / progress.total) * 100) : 0;
+
+  return (
+    <div className="campaign-progress-card">
+      <div className="progress-header">
+        <span className="progress-badge">{channel} Broadcast</span>
+        <span className="progress-percentage">{pct}%</span>
+      </div>
+      
+      <div className="progress-bar-bg">
+        <div className="progress-bar-fill" style={{ width: `${pct}%` }} />
+      </div>
+
+      <div className="progress-stats">
+        <span>Sent: <strong>{progress.completed}</strong> / {progress.total}</span>
+        <div style={{ display: 'flex', gap: '12px' }}>
+          <span className="success-text">Success: <strong>{progress.completed - progress.failed}</strong></span>
+          {progress.failed > 0 && <span className="failed-text">Failed: <strong>{progress.failed}</strong></span>}
+        </div>
+      </div>
+
+      <div className="progress-terminal" ref={logContainerRef}>
+        <div className="terminal-log-row system-msg">📡 [SYSTEM] Initializing campaign...</div>
+        {progress.logs && progress.logs.map((log) => (
+          <div key={log.id} className={`terminal-log-row ${log.message.includes('❌') ? 'failed' : ''}`}>
+            {log.message}
+          </div>
+        ))}
+        {progress.status === 'COMPLETED' && (
+          <div className="terminal-log-row success-msg">🎉 [SYSTEM] Campaign successfully launched!</div>
+        )}
       </div>
     </div>
   );
@@ -68,7 +154,7 @@ function AiMessage({ msg, onAction, disabled, currentChannel, onChannelChange, o
     <div className="msg-row ai anim-fadeUp">
       <div className="ai-avatar">
         <svg viewBox="0 0 24 24" fill="white">
-          <path d="M13.6 12L20 4H17.5L12.4 9.8 8.1 4H2L8.7 13.3 2 22H4.5L10 15.8 14.6 22H21L13.6 12ZM5.4 5.8H7.2L17.6 20.3H15.8L5.4 5.8Z"/>
+          <path d="M13.6 12L20 4H17.5L12.4 9.8 8.1 4H2L8.7 13.3 2 22H4.5L10 15.8 14.6 22H21L13.6 12ZM5.4 5.8H7.2L17.6 20.3H15.8L5.4 5.8Z" />
         </svg>
       </div>
       <div className="msg-bubble ai" style={{ maxWidth: '85%' }}>
@@ -81,16 +167,33 @@ function AiMessage({ msg, onAction, disabled, currentChannel, onChannelChange, o
           {/* Main text */}
           <p className="bubble-text">{msg.text}</p>
 
+          {/* Progress Indicator if launching */}
+          {msg.progressCampaignId && (
+            <CampaignLaunchProgress 
+              campaignId={msg.progressCampaignId} 
+              channel={msg.progressChannel || 'WhatsApp'}
+              onComplete={(progressRes) => {
+                // Update local storage status to ACTIVE
+                const stored = JSON.parse(localStorage.getItem('xp_campaigns') || '[]');
+                const target = stored.find(c => c.id === msg.progressCampaignId);
+                if (target) {
+                  target.status = 'ACTIVE';
+                  localStorage.setItem('xp_campaigns', JSON.stringify(stored));
+                }
+              }}
+            />
+          )}
+
           {/* Audience insight grid */}
           {msg.insights && (
             <div className="insight-grid" style={{ gridTemplateColumns: 'repeat(2,1fr)' }}>
               {[
                 { label: 'Inactive Customers', value: msg.insights.audience_size?.toLocaleString(), sub: 'last 45 days' },
-                { label: 'Avg Spend',           value: `₹${msg.insights.avg_spend?.toLocaleString()}`, sub: 'per customer' },
-                { label: 'High Value',           value: msg.insights.high_value_customers?.toLocaleString(), sub: '> ₹15,000 spend' },
-                { label: 'Top Channel',           value: msg.insights.preferred_channel, sub: 'preferred' },
-                { label: 'Top City',             value: msg.insights.top_city, sub: 'most users' },
-                { label: 'Top Category',         value: msg.insights.top_category, sub: 'most orders' },
+                { label: 'Avg Spend', value: `₹${msg.insights.avg_spend?.toLocaleString()}`, sub: 'per customer' },
+                { label: 'High Value', value: msg.insights.high_value_customers?.toLocaleString(), sub: '> ₹15,000 spend' },
+                { label: 'Top Channel', value: msg.insights.preferred_channel, sub: 'preferred' },
+                { label: 'Top City', value: msg.insights.top_city, sub: 'most users' },
+                { label: 'Top Category', value: msg.insights.top_category, sub: 'most orders' },
               ].map(({ label, value, sub }) => (
                 <div className="insight-card" key={label}>
                   <div className="insight-label">{label}</div>
@@ -227,9 +330,9 @@ function AiMessage({ msg, onAction, disabled, currentChannel, onChannelChange, o
               <div style={{ display: 'flex', gap: 8 }}>
                 {[
                   { id: 'WhatsApp', label: '💬 WhatsApp', color: '#10B981' },
-                  { id: 'Email',    label: '📧 Email',    color: '#2563EB' },
-                  { id: 'SMS',      label: '📱 SMS',      color: '#F59E0B' },
-                  { id: 'RCS',      label: '💬 RCS',      color: '#8B5CF6' },
+                  { id: 'Email', label: '📧 Email', color: '#2563EB' },
+                  { id: 'SMS', label: '📱 SMS', color: '#F59E0B' },
+                  { id: 'RCS', label: '💬 RCS', color: '#8B5CF6' },
                 ].map(ch => {
                   const active = currentChannel === ch.id;
                   return (
@@ -281,8 +384,8 @@ function AiMessage({ msg, onAction, disabled, currentChannel, onChannelChange, o
 /* ── Summary Panel ── */
 function SummaryPanel({ summary }) {
   const cards = [
-    { key: 'goal',     emoji: '🎯', title: 'Goal'     },
-    { key: 'insight',  emoji: '📊', title: 'Insight'  },
+    { key: 'goal', emoji: '🎯', title: 'Goal' },
+    { key: 'insight', emoji: '📊', title: 'Insight' },
     { key: 'strategy', emoji: '✨', title: 'Strategy' },
     { key: 'campaign', emoji: '💬', title: 'Campaign' },
   ];
@@ -309,15 +412,15 @@ function SummaryPanel({ summary }) {
 
 /* ── Main Page ── */
 export default function WorkspacePage() {
-  const [messages, setMessages]     = useState([]);
-  const [summary,  setSummary]      = useState({ goal: null, insight: null, strategy: null, campaign: null });
-  const [input,    setInput]        = useState('');
-  const [loading,  setLoading]      = useState(false);
-  const [phase,    setPhase]        = useState('INITIAL');
+  const [messages, setMessages] = useState([]);
+  const [summary, setSummary] = useState({ goal: null, insight: null, strategy: null, campaign: null });
+  const [input, setInput] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [phase, setPhase] = useState('INITIAL');
   const [draftPayload, setDraftPayload] = useState(null);
   const [classifiedGoal, setClassifiedGoal] = useState('WINBACK');
   const bottomRef = useRef(null);
-  const inputRef  = useRef(null);
+  const inputRef = useRef(null);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -358,9 +461,9 @@ export default function WorkspacePage() {
 
       const actions = [];
       if (res.actions?.includes('USE_DEMO_DATA')) {
-        actions.push({ key: 'USE_DEMO_COFFEE',  label: '☕ Coffee Shop Demo', variant: 'primary' });
+        actions.push({ key: 'USE_DEMO_COFFEE', label: '☕ Coffee Shop Demo', variant: 'primary' });
         actions.push({ key: 'USE_DEMO_FASHION', label: '👗 Fashion Retail Demo', variant: 'primary' });
-        actions.push({ key: 'USE_DEMO_SAAS',    label: '💻 SaaS Platform Demo', variant: 'primary' });
+        actions.push({ key: 'USE_DEMO_SAAS', label: '💻 SaaS Platform Demo', variant: 'primary' });
       }
       if (res.actions?.includes('UPLOAD_DATA')) {
         actions.push({ key: 'UPLOAD_DATA', label: '📤 Upload Data', variant: 'secondary' });
@@ -405,7 +508,7 @@ export default function WorkspacePage() {
 
         setSummary(s => ({
           ...s,
-          insight:  `${insights.audience_size?.toLocaleString()} dormant customers identified`,
+          insight: `${insights.audience_size?.toLocaleString()} dormant customers identified`,
           strategy: `${decision?.channel} ${decision?.campaign_type}`,
         }));
 
@@ -472,7 +575,7 @@ export default function WorkspacePage() {
         const res = await api.launchCampaign(payload);
         setSummary(s => ({ ...s, campaign: `Campaign #${res.campaign_id} is live` }));
 
-        // Save to localStorage for campaigns page
+        // Save to localStorage for campaigns page (initially mark as ACTIVE/SENDING)
         const stored = JSON.parse(localStorage.getItem('xp_campaigns') || '[]');
         stored.unshift({
           id: res.campaign_id,
@@ -481,17 +584,15 @@ export default function WorkspacePage() {
           channel: payload.channel,
           audience_size: res.audience_size,
           logs_created: res.logs_created,
-          status: res.status,
+          status: 'SENDING',
           created_at: new Date().toISOString(),
         });
         localStorage.setItem('xp_campaigns', JSON.stringify(stored));
 
         pushAi({
           text: `Your campaign is live and messages are being delivered.`,
-          success: {
-            title: `Campaign #${res.campaign_id} Launched Successfully`,
-            subtitle: `${res.logs_created} messages sent via ${payload.channel}`,
-          },
+          progressCampaignId: res.campaign_id,
+          progressChannel: payload.channel,
         });
 
         setPhase('LAUNCHED');
@@ -529,7 +630,7 @@ export default function WorkspacePage() {
 
       setSummary(s => ({
         ...s,
-        insight:  `${insights.audience_size?.toLocaleString()} dormant customers identified`,
+        insight: `${insights.audience_size?.toLocaleString()} dormant customers identified`,
         strategy: `${decision?.channel} ${decision?.campaign_type}`,
       }));
 
@@ -605,14 +706,14 @@ export default function WorkspacePage() {
             msg.type === 'user'
               ? <UserMessage key={i} text={msg.text} />
               : <AiMessage
-                  key={i}
-                  msg={msg}
-                  onAction={handleAction}
-                  disabled={loading}
-                  currentChannel={draftPayload?.channel || 'WhatsApp'}
-                  onChannelChange={handleChannelChange}
-                  onUpload={handleUploadSuccess}
-                />
+                key={i}
+                msg={msg}
+                onAction={handleAction}
+                disabled={loading}
+                currentChannel={draftPayload?.channel || 'WhatsApp'}
+                onChannelChange={handleChannelChange}
+                onUpload={handleUploadSuccess}
+              />
           )}
           {loading && <TypingIndicator />}
           <div ref={bottomRef} />

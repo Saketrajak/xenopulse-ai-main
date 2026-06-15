@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { api } from '../lib/api';
 
 const CHANNELS = ['WhatsApp', 'Email', 'SMS', 'RCS'];
-const GOALS    = ['RETENTION', 'WINBACK', 'UPSELL', 'REACTIVATION', 'ENGAGEMENT'];
+const GOALS = ['RETENTION', 'WINBACK', 'UPSELL', 'REACTIVATION', 'ENGAGEMENT'];
 
 const getDefaultForm = () => ({
   campaign_name: '',
@@ -13,14 +13,14 @@ const getDefaultForm = () => ({
 });
 
 export default function CampaignsPage() {
-  const [campaigns, setCampaigns]   = useState([]);
-  const [stats, setStats]           = useState(null);
-  const [audience, setAudience]     = useState(null);
-  const [showModal, setShowModal]   = useState(false);
-  const [form, setForm]             = useState(getDefaultForm());
-  const [launching, setLaunching]   = useState(false);
-  const [selected, setSelected]     = useState(null);
-  const [analytics, setAnalytics]   = useState(null);
+  const [campaigns, setCampaigns] = useState([]);
+  const [stats, setStats] = useState(null);
+  const [audience, setAudience] = useState(null);
+  const [showModal, setShowModal] = useState(false);
+  const [form, setForm] = useState(getDefaultForm());
+  const [launching, setLaunching] = useState(false);
+  const [selected, setSelected] = useState(null);
+  const [analytics, setAnalytics] = useState(null);
   const [loadingAnalytics, setLoadingAnalytics] = useState(false);
 
   /* Load from localStorage + fetch backend stats */
@@ -28,8 +28,8 @@ export default function CampaignsPage() {
     const stored = JSON.parse(localStorage.getItem('xp_campaigns') || '[]');
     setCampaigns(stored);
 
-    api.stats().then(setStats).catch(() => {});
-    api.audiencePreview().then(setAudience).catch(() => {});
+    api.stats().then(setStats).catch(() => { });
+    api.audiencePreview().then(setAudience).catch(() => { });
   }, []);
 
   const handleLaunch = async (e) => {
@@ -85,15 +85,15 @@ export default function CampaignsPage() {
 
   const channelColor = (ch) => {
     if (ch === 'WhatsApp') return '#10B981';
-    if (ch === 'Email')    return '#2563EB';
-    if (ch === 'RCS')      return '#8B5CF6';
+    if (ch === 'Email') return '#2563EB';
+    if (ch === 'RCS') return '#8B5CF6';
     return '#F59E0B';
   };
 
   const channelEmoji = (ch) => {
     if (ch === 'WhatsApp') return '💬';
-    if (ch === 'Email')    return '📧';
-    if (ch === 'RCS')      return '💬';
+    if (ch === 'Email') return '📧';
+    if (ch === 'RCS') return '💬';
     return '📱';
   };
 
@@ -118,8 +118,8 @@ export default function CampaignsPage() {
         <div className="stats-row" style={{ gridTemplateColumns: 'repeat(3,1fr)' }}>
           {[
             { emoji: '👥', label: 'Total Customers', value: stats?.customers?.toLocaleString() ?? '…', color: '#EFF6FF', badge: null },
-            { emoji: '🛒', label: 'Total Orders',    value: stats?.orders?.toLocaleString()    ?? '…', color: '#F0FDF4', badge: null },
-            { emoji: '😴', label: 'Inactive (45d)',  value: audience?.audience_size?.toLocaleString() ?? '…', color: '#FFF7ED', badge: null },
+            { emoji: '🛒', label: 'Total Orders', value: stats?.orders?.toLocaleString() ?? '…', color: '#F0FDF4', badge: null },
+            { emoji: '😴', label: 'Inactive (45d)', value: audience?.audience_size?.toLocaleString() ?? '…', color: '#FFF7ED', badge: null },
           ].map(({ emoji, label, value, color }) => (
             <div key={label} className="stat-card anim-fadeUp">
               <div className="stat-icon" style={{ background: color, fontSize: 20 }}>{emoji}</div>
@@ -176,8 +176,8 @@ export default function CampaignsPage() {
                     <div className="campaign-metrics">
                       {[
                         { label: 'Audience', value: c.audience_size?.toLocaleString() ?? '—' },
-                        { label: 'Messages',  value: c.logs_created?.toLocaleString()  ?? '—' },
-                        { label: 'Campaign',  value: `#${c.id ?? '—'}` },
+                        { label: 'Messages', value: c.logs_created?.toLocaleString() ?? '—' },
+                        { label: 'Campaign', value: `#${c.id ?? '—'}` },
                       ].map(({ label, value }) => (
                         <div key={label}>
                           <div className="campaign-metric-label">{label}</div>
@@ -223,10 +223,10 @@ export default function CampaignsPage() {
                 <>
                   <div className="funnel">
                     {[
-                      { label: 'Sent',      count: analytics.sent,      color: '#94A3B8', pct: 100 },
-                      { label: 'Delivered', count: analytics.delivered, color: '#2563EB', pct: analytics.delivery_rate   },
-                      { label: 'Opened',    count: analytics.opened,    color: '#8B5CF6', pct: analytics.sent ? Number((analytics.opened / analytics.sent * 100).toFixed(2)) : 0 },
-                      { label: 'Clicked',   count: analytics.clicked,   color: '#10B981', pct: analytics.sent ? Number((analytics.clicked / analytics.sent * 100).toFixed(2)) : 0 },
+                      { label: 'Sent', count: analytics.sent, color: '#94A3B8', pct: 100 },
+                      { label: 'Delivered', count: analytics.delivered, color: '#2563EB', pct: analytics.delivery_rate },
+                      { label: 'Opened', count: analytics.opened, color: '#8B5CF6', pct: analytics.sent ? Number((analytics.opened / analytics.sent * 100).toFixed(2)) : 0 },
+                      { label: 'Clicked', count: analytics.clicked, color: '#10B981', pct: analytics.sent ? Number((analytics.clicked / analytics.sent * 100).toFixed(2)) : 0 },
                       { label: 'Converted', count: analytics.converted, color: '#F59E0B', pct: analytics.conversion_rate },
                     ].map(({ label, count, color, pct }) => (
                       <div key={label} className="funnel-row">
@@ -246,10 +246,10 @@ export default function CampaignsPage() {
 
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginTop: 20 }}>
                     {[
-                      { label: 'Delivery Rate',    value: `${analytics.delivery_rate}%`    },
-                      { label: 'Open Rate',         value: `${analytics.open_rate}%`         },
-                      { label: 'Click-Through',     value: `${analytics.ctr}%`               },
-                      { label: 'Conversion Rate',  value: `${analytics.conversion_rate}%`  },
+                      { label: 'Delivery Rate', value: `${analytics.delivery_rate}%` },
+                      { label: 'Open Rate', value: `${analytics.open_rate}%` },
+                      { label: 'Click-Through', value: `${analytics.ctr}%` },
+                      { label: 'Conversion Rate', value: `${analytics.conversion_rate}%` },
                     ].map(({ label, value }) => (
                       <div key={label} className="insight-card">
                         <div className="insight-label">{label}</div>

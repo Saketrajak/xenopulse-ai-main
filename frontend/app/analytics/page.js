@@ -23,11 +23,11 @@ function FunnelBar({ label, count, total, color, pct }) {
 }
 
 export default function AnalyticsPage() {
-  const [stats,    setStats]    = useState(null);
+  const [stats, setStats] = useState(null);
   const [audience, setAudience] = useState(null);
-  const [logs,     setLogs]     = useState([]);
-  const [loading,  setLoading]  = useState(true);
-  const [error,    setError]    = useState(false);
+  const [logs, setLogs] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
 
   useEffect(() => {
     setLoading(true);
@@ -46,21 +46,21 @@ export default function AnalyticsPage() {
   }, []);
 
   /* Compute funnel from logs */
-  const total     = logs.length;
+  const total = logs.length;
   const delivered = logs.filter(l => l.delivered_at && l.delivered_at !== 'None').length;
-  const opened    = logs.filter(l => l.opened_at    && l.opened_at    !== 'None').length;
-  const clicked   = logs.filter(l => l.clicked_at   && l.clicked_at   !== 'None').length;
+  const opened = logs.filter(l => l.opened_at && l.opened_at !== 'None').length;
+  const clicked = logs.filter(l => l.clicked_at && l.clicked_at !== 'None').length;
   const converted = logs.filter(l => l.converted_at && l.converted_at !== 'None').length;
-  const failed    = logs.filter(l => l.status === 'PERMANENT_FAILURE' || l.status === 'FAILED').length;
-  const pending   = logs.filter(l => l.status === 'PENDING').length;
+  const failed = logs.filter(l => l.status === 'PERMANENT_FAILURE' || l.status === 'FAILED').length;
+  const pending = logs.filter(l => l.status === 'PENDING').length;
 
   const pct = (n) => total > 0 ? `${Math.round((n / total) * 100)}%` : '0%';
 
   const funnelSteps = [
-    { label: 'Sent',      count: total,     color: '#94A3B8', pct: '100%'     },
+    { label: 'Sent', count: total, color: '#94A3B8', pct: '100%' },
     { label: 'Delivered', count: delivered, color: '#2563EB', pct: pct(delivered) },
-    { label: 'Opened',    count: opened,    color: '#8B5CF6', pct: pct(opened)    },
-    { label: 'Clicked',   count: clicked,   color: '#10B981', pct: pct(clicked)   },
+    { label: 'Opened', count: opened, color: '#8B5CF6', pct: pct(opened) },
+    { label: 'Clicked', count: clicked, color: '#10B981', pct: pct(clicked) },
     { label: 'Converted', count: converted, color: '#F59E0B', pct: pct(converted) },
   ];
 
@@ -81,8 +81,8 @@ export default function AnalyticsPage() {
     if (!ch) return '';
     const clean = ch.toLowerCase();
     if (clean === 'whatsapp') return 'whatsapp';
-    if (clean === 'email')    return 'email';
-    if (clean === 'rcs')      return 'rcs';
+    if (clean === 'email') return 'email';
+    if (clean === 'rcs') return 'rcs';
     return 'sms';
   };
 
@@ -97,7 +97,7 @@ export default function AnalyticsPage() {
         </div>
         <div className="page-content">
           <div className="stats-row" style={{ gridTemplateColumns: 'repeat(4,1fr)' }}>
-            {[1,2,3,4].map(i => (
+            {[1, 2, 3, 4].map(i => (
               <div key={i} className="stat-card">
                 <div className="skeleton" style={{ width: 38, height: 38, borderRadius: 10, marginBottom: 14 }} />
                 <div className="skeleton" style={{ width: '60%', height: 28, marginBottom: 8 }} />
@@ -149,9 +149,9 @@ export default function AnalyticsPage() {
         <div className="stats-row" style={{ gridTemplateColumns: 'repeat(4,1fr)', marginBottom: 24 }}>
           {[
             { emoji: '👥', label: 'Total Customers', value: stats?.customers?.toLocaleString() ?? '—', color: '#EFF6FF' },
-            { emoji: '🛒', label: 'Total Orders',    value: stats?.orders?.toLocaleString()    ?? '—', color: '#F0FDF4' },
+            { emoji: '🛒', label: 'Total Orders', value: stats?.orders?.toLocaleString() ?? '—', color: '#F0FDF4' },
             { emoji: '😴', label: 'Inactive Customers', value: audience?.audience_size?.toLocaleString() ?? '—', color: '#FFF7ED' },
-            { emoji: '📨', label: 'Messages Tracked',   value: total.toLocaleString(), color: '#EDE9FE' },
+            { emoji: '📨', label: 'Messages Tracked', value: total.toLocaleString(), color: '#EDE9FE' },
           ].map(({ emoji, label, value, color }, i) => (
             <div key={label} className="stat-card anim-fadeUp" style={{ animationDelay: `${i * 0.07}s` }}>
               <div className="stat-icon" style={{ background: color, fontSize: 20 }}>{emoji}</div>
@@ -194,13 +194,13 @@ export default function AnalyticsPage() {
               <div className="audience-list">
                 {[
                   { label: 'Inactive Customers (45d)', value: audience.audience_size?.toLocaleString() },
-                  { label: 'Average Spend',             value: `₹${audience.avg_spend?.toLocaleString()}` },
-                  { label: 'Total Revenue at Risk',     value: `₹${audience.total_revenue?.toLocaleString()}` },
-                  { label: 'High-Value Customers',      value: audience.high_value_customers?.toLocaleString() },
-                  { label: 'Preferred Channel',         value: audience.preferred_channel },
-                  { label: 'Top City',                  value: audience.top_city },
-                  { label: 'Top Category',              value: audience.top_category },
-                  { label: 'Avg Order Value',           value: `₹${audience.avg_order_value?.toLocaleString()}` },
+                  { label: 'Average Spend', value: `₹${audience.avg_spend?.toLocaleString()}` },
+                  { label: 'Total Revenue at Risk', value: `₹${audience.total_revenue?.toLocaleString()}` },
+                  { label: 'High-Value Customers', value: audience.high_value_customers?.toLocaleString() },
+                  { label: 'Preferred Channel', value: audience.preferred_channel },
+                  { label: 'Top City', value: audience.top_city },
+                  { label: 'Top Category', value: audience.top_category },
+                  { label: 'Avg Order Value', value: `₹${audience.avg_order_value?.toLocaleString()}` },
                 ].map(({ label, value }) => (
                   <div key={label} className="audience-row">
                     <span className="audience-row-label">{label}</span>
@@ -225,7 +225,7 @@ export default function AnalyticsPage() {
               Message Status Breakdown
             </div>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
-              {Object.entries(statusCount).sort((a,b) => b[1]-a[1]).map(([status, count]) => (
+              {Object.entries(statusCount).sort((a, b) => b[1] - a[1]).map(([status, count]) => (
                 <div key={status} style={{
                   display: 'flex', alignItems: 'center', gap: 8,
                   padding: '8px 16px',
@@ -287,14 +287,14 @@ export default function AnalyticsPage() {
                           padding: '2px 8px', borderRadius: 99, fontSize: 11, fontWeight: 700,
                           background: log.status === 'PERMANENT_FAILURE' ? '#FEE2E2'
                             : log.status === 'CONVERTED' ? '#D1FAE5'
-                            : log.status === 'DELIVERED' ? '#DBEAFE'
-                            : log.status === 'OPENED' ? '#EDE9FE'
-                            : '#FEF3C7',
+                              : log.status === 'DELIVERED' ? '#DBEAFE'
+                                : log.status === 'OPENED' ? '#EDE9FE'
+                                  : '#FEF3C7',
                           color: log.status === 'PERMANENT_FAILURE' ? '#991B1B'
                             : log.status === 'CONVERTED' ? '#065F46'
-                            : log.status === 'DELIVERED' ? '#1E40AF'
-                            : log.status === 'OPENED' ? '#4C1D95'
-                            : '#92400E',
+                              : log.status === 'DELIVERED' ? '#1E40AF'
+                                : log.status === 'OPENED' ? '#4C1D95'
+                                  : '#92400E',
                         }}>
                           {log.status}
                         </span>

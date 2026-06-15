@@ -33,6 +33,7 @@ export const api = {
   launchCampaign: (data) =>
     req('/campaigns/launch', { method: 'POST', body: JSON.stringify(data) }),
   campaignAnalytics: (id) => req(`/campaigns/${id}/analytics`),
+  getCampaignProgress: (id) => req(`/campaigns/${id}/progress`),
 
   // Ingestion
   uploadCSV: (formData) =>
