@@ -124,26 +124,31 @@ export default function Sidebar() {
 
         {/* Recent Chats Section */}
         {recentChats.length > 0 && (
-          <div className="recent-chats-section">
-            <div className="recent-chats-header">Recent Chats</div>
-            <div className="recent-chats-list">
+          <div className="recent-chats-section border-t border-[var(--border)] pt-4 px-3.5 pb-2 flex flex-col gap-1.5 mt-auto">
+            <div className="recent-chats-header text-[10.5px] font-bold text-[var(--text-3)] uppercase tracking-wider px-3 mb-1">
+              Recent Chats
+            </div>
+            <div className="recent-chats-list flex flex-col gap-1 overflow-y-auto max-h-[200px] pr-1">
               {recentChats.map((chat) => {
                 const active = currentChatId === chat.id && pathname === '/';
                 return (
                   <Link
                     key={chat.id}
                     href="/"
-                    onClick={() => {
+                    onClick={(e) => {
                       if (typeof window !== 'undefined') {
                         sessionStorage.setItem('xp_current_chat_id', chat.id);
                         window.dispatchEvent(new Event('xp_recent_chats_updated'));
                         window.dispatchEvent(new Event('xp_active_chat_changed'));
                       }
+                      if (pathname === '/') {
+                        e.preventDefault();
+                      }
                     }}
-                    className={`recent-chat-item${active ? ' active' : ''}`}
+                    className={`recent-chat-item flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] font-medium text-[var(--text-2)] hover:bg-[var(--surface-2)] hover:text-[var(--text-1)] hover:translate-x-0.5 transition-all duration-200 ${active ? 'bg-[var(--brand-light)] text-[var(--brand)] font-semibold' : ''}`}
                   >
-                    <span className="recent-chat-icon">💬</span>
-                    <span className="recent-chat-title" title={chat.title}>
+                    <span className="recent-chat-icon text-[13px] flex-shrink-0">💬</span>
+                    <span className="recent-chat-title truncate flex-1" title={chat.title}>
                       {chat.title}
                     </span>
                   </Link>
