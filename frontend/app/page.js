@@ -1,5 +1,6 @@
 'use client';
 import { useState, useRef, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { api } from './lib/api';
 
 /* ── helpers ── */
@@ -26,8 +27,43 @@ const QUICK_ACTIONS = [
   'Boost WhatsApp Engagement',
 ];
 
+const STATUS_SEQUENCES = {
+  CHAT: [
+    "🔍 Understanding your marketing goal...",
+    "🧠 Classifying campaign intent...",
+    "📊 Checking customer database availability...",
+    "✨ Formulating initial strategy response...",
+  ],
+  DEMO: [
+    "📁 Resetting previous customer database...",
+    "🌱 Simulating customer purchase profiles...",
+    "📅 Generating mock order histories...",
+    "📊 Running audience segmentation analysis...",
+    "🧠 Calculating spend & Preferred channels...",
+    "✨ Finalizing strategy metrics...",
+  ],
+  DRAFT: [
+    "📝 Reading target cohort & parameters...",
+    "🎨 Formatting channel copywriting rules...",
+    "🧠 Drafting message variants via Xeno AI...",
+    "✨ Finalizing AI campaign template...",
+  ],
+  LAUNCH: [
+    "🚀 Initializing launch sequence...",
+    "📁 Querying target segment list...",
+    "📡 Establishing delivery channel routes...",
+    "⚡ Broadcasting campaign messages...",
+  ],
+  UPLOAD: [
+    "📁 Ingesting CSV files into database...",
+    "⚡ Parsing customers & orders schema...",
+    "📊 Calculating total spends & segments...",
+    "🧠 Building cohort insights...",
+  ]
+};
+
 /* ── Sub-components ── */
-function TypingIndicator() {
+function TypingIndicator({ text }) {
   return (
     <div className="msg-row ai anim-fadeIn">
       <div className="ai-avatar">
@@ -36,11 +72,16 @@ function TypingIndicator() {
         </svg>
       </div>
       <div className="msg-bubble ai">
-        <div className="bubble-body">
-          <div className="typing-indicator">
-            <span className="typing-dot" />
-            <span className="typing-dot" />
-            <span className="typing-dot" />
+        <div className="bubble-body" style={{ minWidth: '220px', padding: '12px 16px' }}>
+          <div className="ai-label" style={{ marginBottom: '6px' }}>
+            <span className="ai-label-dot" />
+            <span className="ai-label-text">Xeno AI is thinking</span>
+          </div>
+          <div className="typing-indicator-with-text">
+            <div className="progress-spinner-mini" />
+            <span className="typing-status-text anim-fadeIn" key={text}>
+              {text || 'Thinking...'}
+            </span>
           </div>
         </div>
       </div>
@@ -59,8 +100,12 @@ function UserMessage({ text }) {
 }
 
 function CampaignLaunchProgress({ campaignId, channel, onComplete }) {
+  const router = useRouter();
   const [progress, setProgress] = useState(null);
   const [error, setError] = useState(false);
+  const [countdown, setCountdown] = useState(7);
+  const [redirecting, setRedirecting] = useState(false);
+  const [cancelledRedirect, setCancelledRedirect] = useState(false);
   const logContainerRef = useRef(null);
 
   useEffect(() => {
@@ -71,6 +116,7 @@ function CampaignLaunchProgress({ campaignId, channel, onComplete }) {
         setProgress(res);
         if (res.status === 'COMPLETED' || res.completed >= res.total) {
           clearInterval(interval);
+          setRedirecting(true); // Trigger redirect countdown
           if (onComplete) onComplete(res);
         }
       } catch (err) {
@@ -90,6 +136,24 @@ function CampaignLaunchProgress({ campaignId, channel, onComplete }) {
       logContainerRef.current.scrollTop = logContainerRef.current.scrollHeight;
     }
   }, [progress?.logs?.length]);
+
+  // Handle countdown interval safely without side-effects inside state setter
+  useEffect(() => {
+    let countdownInterval;
+    if (redirecting && !cancelledRedirect && countdown > 0) {
+      countdownInterval = setInterval(() => {
+        setCountdown(prev => prev - 1);
+      }, 1000);
+    }
+    return () => clearInterval(countdownInterval);
+  }, [redirecting, cancelledRedirect, countdown]);
+
+  // Handle actual redirect side-effect
+  useEffect(() => {
+    if (redirecting && !cancelledRedirect && countdown === 0) {
+      router.push('/campaigns');
+    }
+  }, [redirecting, cancelledRedirect, countdown, router]);
 
   if (error) {
     return (
@@ -111,33 +175,92 @@ function CampaignLaunchProgress({ campaignId, channel, onComplete }) {
   const pct = progress.total > 0 ? Math.round((progress.completed / progress.total) * 100) : 0;
 
   return (
-    <div className="campaign-progress-card">
-      <div className="progress-header">
-        <span className="progress-badge">{channel} Broadcast</span>
-        <span className="progress-percentage">{pct}%</span>
-      </div>
-      
-      <div className="progress-bar-bg">
-        <div className="progress-bar-fill" style={{ width: `${pct}%` }} />
-      </div>
-
-      <div className="progress-stats">
-        <span>Sent: <strong>{progress.completed}</strong> / {progress.total}</span>
-        <div style={{ display: 'flex', gap: '12px' }}>
-          <span className="success-text">Success: <strong>{progress.completed - progress.failed}</strong></span>
-          {progress.failed > 0 && <span className="failed-text">Failed: <strong>{progress.failed}</strong></span>}
+    <div style={{ position: 'relative' }}>
+      {/* Celebration Confetti */}
+      {redirecting && (
+        <div className="confetti-container">
+          {[...Array(30)].map((_, i) => (
+            <div
+              key={i}
+              className={`confetti-particle color-${i % 5}`}
+              style={{
+                left: `${Math.random() * 100}%`,
+                top: `${Math.random() * -10}%`,
+                animationDelay: `${Math.random() * 2}s`,
+                animationDuration: `${1.5 + Math.random() * 2}s`,
+              }}
+            />
+          ))}
         </div>
-      </div>
+      )}
 
-      <div className="progress-terminal" ref={logContainerRef}>
-        <div className="terminal-log-row system-msg">📡 [SYSTEM] Initializing campaign...</div>
-        {progress.logs && progress.logs.map((log) => (
-          <div key={log.id} className={`terminal-log-row ${log.message.includes('❌') ? 'failed' : ''}`}>
-            {log.message}
+      <div className="campaign-progress-card">
+        <div className="progress-header">
+          <span className="progress-badge">{channel} Broadcast</span>
+          <span className="progress-percentage">{pct}%</span>
+        </div>
+        
+        <div className="progress-bar-bg">
+          <div className="progress-bar-fill" style={{ width: `${pct}%` }} />
+        </div>
+
+        <div className="progress-stats">
+          <span>Sent: <strong>{progress.completed}</strong> / {progress.total}</span>
+          <div style={{ display: 'flex', gap: '12px' }}>
+            <span className="success-text">Success: <strong>{progress.completed - progress.failed}</strong></span>
+            {progress.failed > 0 && <span className="failed-text">Failed: <strong>{progress.failed}</strong></span>}
           </div>
-        ))}
-        {progress.status === 'COMPLETED' && (
-          <div className="terminal-log-row success-msg">🎉 [SYSTEM] Campaign successfully launched!</div>
+        </div>
+
+        <div className="progress-terminal" ref={logContainerRef}>
+          <div className="terminal-log-row system-msg">📡 [SYSTEM] Initializing campaign...</div>
+          {progress.logs && progress.logs.map((log) => (
+            <div key={log.id} className={`terminal-log-row ${log.message.includes('❌') ? 'failed' : ''}`}>
+              {log.message}
+            </div>
+          ))}
+          {progress.status === 'COMPLETED' && (
+            <div className="terminal-log-row success-msg">🎉 [SYSTEM] Campaign successfully launched!</div>
+          )}
+        </div>
+
+        {/* Celebration Redirect Overlay Panel */}
+        {redirecting && (
+          <div className="campaign-celebration-banner anim-fadeUp">
+            <div className="celebration-badge">🚀 Live!</div>
+            <div className="celebration-text">
+              {cancelledRedirect ? (
+                "Campaign launched successfully!"
+              ) : (
+                <>
+                  Campaign launched successfully! Redirecting in <strong>{countdown}</strong>s...
+                </>
+              )}
+            </div>
+            <div className="celebration-actions">
+              <button 
+                className="celebration-btn primary" 
+                onClick={() => router.push('/campaigns')}
+              >
+                Go Now
+              </button>
+              {!cancelledRedirect ? (
+                <button 
+                  className="celebration-btn secondary" 
+                  onClick={() => setCancelledRedirect(true)}
+                >
+                  Skip
+                </button>
+              ) : (
+                <button 
+                  className="celebration-btn secondary" 
+                  onClick={() => setRedirecting(false)}
+                >
+                  Dismiss
+                </button>
+              )}
+            </div>
+          </div>
         )}
       </div>
     </div>
@@ -421,6 +544,97 @@ export default function WorkspacePage() {
   const [classifiedGoal, setClassifiedGoal] = useState('WINBACK');
   const bottomRef = useRef(null);
   const inputRef = useRef(null);
+  const [isLoaded, setIsLoaded] = useState(false);
+  const [loadingType, setLoadingType] = useState('CHAT');
+  const [loadingText, setLoadingText] = useState('');
+
+  // Handle dynamic AI thinking status cycle
+  useEffect(() => {
+    if (!loading) {
+      setLoadingText('');
+      return;
+    }
+
+    const sequence = STATUS_SEQUENCES[loadingType] || STATUS_SEQUENCES.CHAT;
+    let index = 0;
+    setLoadingText(sequence[0]);
+
+    const interval = setInterval(() => {
+      index++;
+      if (index < sequence.length) {
+        setLoadingText(sequence[index]);
+      } else {
+        clearInterval(interval);
+      }
+    }, 1200); // 1.2 seconds per transition step
+
+    return () => clearInterval(interval);
+  }, [loading, loadingType]);
+
+  // Load from sessionStorage on mount
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const storedMessages = sessionStorage.getItem('xp_chat_messages');
+      const storedSummary = sessionStorage.getItem('xp_chat_summary');
+      const storedPhase = sessionStorage.getItem('xp_chat_phase');
+      const storedDraftPayload = sessionStorage.getItem('xp_chat_draft_payload');
+      const storedClassifiedGoal = sessionStorage.getItem('xp_chat_classified_goal');
+
+      if (storedMessages) setMessages(JSON.parse(storedMessages));
+      if (storedSummary) setSummary(JSON.parse(storedSummary));
+      if (storedPhase) setPhase(storedPhase);
+      if (storedDraftPayload) setDraftPayload(JSON.parse(storedDraftPayload));
+      if (storedClassifiedGoal) setClassifiedGoal(storedClassifiedGoal);
+      
+      setIsLoaded(true);
+    }
+  }, []);
+
+  // Save to sessionStorage when states change
+  useEffect(() => {
+    if (isLoaded) {
+      sessionStorage.setItem('xp_chat_messages', JSON.stringify(messages));
+    }
+  }, [messages, isLoaded]);
+
+  useEffect(() => {
+    if (isLoaded) {
+      sessionStorage.setItem('xp_chat_summary', JSON.stringify(summary));
+    }
+  }, [summary, isLoaded]);
+
+  useEffect(() => {
+    if (isLoaded) {
+      sessionStorage.setItem('xp_chat_phase', phase);
+    }
+  }, [phase, isLoaded]);
+
+  useEffect(() => {
+    if (isLoaded) {
+      sessionStorage.setItem('xp_chat_draft_payload', JSON.stringify(draftPayload));
+    }
+  }, [draftPayload, isLoaded]);
+
+  useEffect(() => {
+    if (isLoaded) {
+      sessionStorage.setItem('xp_chat_classified_goal', classifiedGoal);
+    }
+  }, [classifiedGoal, isLoaded]);
+
+  const handleResetChat = () => {
+    if (typeof window !== 'undefined') {
+      sessionStorage.removeItem('xp_chat_messages');
+      sessionStorage.removeItem('xp_chat_summary');
+      sessionStorage.removeItem('xp_chat_phase');
+      sessionStorage.removeItem('xp_chat_draft_payload');
+      sessionStorage.removeItem('xp_chat_classified_goal');
+    }
+    setMessages([]);
+    setSummary({ goal: null, insight: null, strategy: null, campaign: null });
+    setPhase('INITIAL');
+    setDraftPayload(null);
+    setClassifiedGoal('WINBACK');
+  };
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -447,6 +661,7 @@ export default function WorkspacePage() {
 
     pushUser(trimmed);
     setInput('');
+    setLoadingType('CHAT');
     setLoading(true);
 
     try {
@@ -492,6 +707,18 @@ export default function WorkspacePage() {
   /* ── Handle action button clicks ── */
   const handleAction = async (key) => {
     if (loading) return;
+    
+    // Determine loading type based on action key
+    if (key === 'USE_DEMO_COFFEE' || key === 'USE_DEMO_FASHION' || key === 'USE_DEMO_SAAS') {
+      setLoadingType('DEMO');
+    } else if (key === 'GENERATE_AI_CAMPAIGN') {
+      setLoadingType('DRAFT');
+    } else if (key === 'LAUNCH_CAMPAIGN') {
+      setLoadingType('LAUNCH');
+    } else {
+      setLoadingType('CHAT');
+    }
+
     setLoading(true);
 
     try {
@@ -619,6 +846,7 @@ export default function WorkspacePage() {
 
   const handleUploadSuccess = async (res) => {
     pushUser(`Uploaded files successfully: ${res.customers_loaded} customers, ${res.orders_loaded} orders ingested.`);
+    setLoadingType('UPLOAD');
     setLoading(true);
 
     try {
@@ -673,7 +901,12 @@ export default function WorkspacePage() {
             <div className="page-title">Workspace</div>
             <div className="page-subtitle">AI-powered customer engagement</div>
           </div>
-          <div className="user-avatar">S</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <button className="reset-chat-btn" onClick={handleResetChat} title="Reset and start a new campaign">
+              🔄 New Campaign
+            </button>
+            <div className="user-avatar">S</div>
+          </div>
         </div>
 
         {/* Greeting + chips */}
@@ -715,7 +948,7 @@ export default function WorkspacePage() {
                 onUpload={handleUploadSuccess}
               />
           )}
-          {loading && <TypingIndicator />}
+          {loading && <TypingIndicator text={loadingText} />}
           <div ref={bottomRef} />
         </div>
 
