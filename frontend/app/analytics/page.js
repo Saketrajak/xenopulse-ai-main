@@ -79,8 +79,10 @@ export default function AnalyticsPage() {
 
   const channelClass = (ch) => {
     if (!ch) return '';
-    if (ch.toLowerCase() === 'whatsapp') return 'whatsapp';
-    if (ch.toLowerCase() === 'email')    return 'email';
+    const clean = ch.toLowerCase();
+    if (clean === 'whatsapp') return 'whatsapp';
+    if (clean === 'email')    return 'email';
+    if (clean === 'rcs')      return 'rcs';
     return 'sms';
   };
 
@@ -277,7 +279,7 @@ export default function AnalyticsPage() {
                       <td>#{log.customer_id}</td>
                       <td>
                         <span className={`channel-pill ${channelClass(log.channel)}`}>
-                          {log.channel === 'WhatsApp' ? '💬' : log.channel === 'Email' ? '📧' : '📱'} {log.channel}
+                          {log.channel === 'WhatsApp' ? '💬' : log.channel === 'Email' ? '📧' : log.channel === 'RCS' ? '💬' : '📱'} {log.channel}
                         </span>
                       </td>
                       <td>

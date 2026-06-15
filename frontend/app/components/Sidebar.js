@@ -38,14 +38,8 @@ export default function Sidebar() {
   return (
     <aside className="sidebar">
       {/* Logo */}
-      <div className="sidebar-logo">
-        <div className="logo-icon">
-          <XLogo />
-        </div>
-        <div>
-          <div className="logo-name">xenopulse</div>
-          <div className="logo-sub">AI Marketing Copilot</div>
-        </div>
+      <div className="sidebar-logo" style={{ padding: '20px 18px 16px' }}>
+        <img src="/xeno-logo.png" alt="xenopulse" style={{ height: '38px', objectFit: 'contain' }} />
       </div>
 
       {/* Navigation */}

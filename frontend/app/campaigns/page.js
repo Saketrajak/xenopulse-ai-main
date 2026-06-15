@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { api } from '../lib/api';
 
-const CHANNELS = ['WhatsApp', 'Email', 'SMS'];
+const CHANNELS = ['WhatsApp', 'Email', 'SMS', 'RCS'];
 const GOALS    = ['RETENTION', 'WINBACK', 'UPSELL', 'REACTIVATION', 'ENGAGEMENT'];
 
 const getDefaultForm = () => ({
@@ -86,12 +86,14 @@ export default function CampaignsPage() {
   const channelColor = (ch) => {
     if (ch === 'WhatsApp') return '#10B981';
     if (ch === 'Email')    return '#2563EB';
+    if (ch === 'RCS')      return '#8B5CF6';
     return '#F59E0B';
   };
 
   const channelEmoji = (ch) => {
     if (ch === 'WhatsApp') return '💬';
     if (ch === 'Email')    return '📧';
+    if (ch === 'RCS')      return '💬';
     return '📱';
   };
 

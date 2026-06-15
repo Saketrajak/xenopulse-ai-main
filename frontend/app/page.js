@@ -229,6 +229,7 @@ function AiMessage({ msg, onAction, disabled, currentChannel, onChannelChange, o
                   { id: 'WhatsApp', label: '💬 WhatsApp', color: '#10B981' },
                   { id: 'Email',    label: '📧 Email',    color: '#2563EB' },
                   { id: 'SMS',      label: '📱 SMS',      color: '#F59E0B' },
+                  { id: 'RCS',      label: '💬 RCS',      color: '#8B5CF6' },
                 ].map(ch => {
                   const active = currentChannel === ch.id;
                   return (
@@ -579,13 +580,18 @@ export default function WorkspacePage() {
           <>
             <div className="chat-greeting anim-fadeUp">
               <div className="greeting-title">
-                {getGreeting()}, Saket 👋
+                Greetings!! HAPPYxens 👋
               </div>
               <div className="greeting-sub">What would you like to achieve today?</div>
             </div>
             <div className="quick-actions">
-              {QUICK_ACTIONS.map((q) => (
-                <button key={q} className="quick-chip" onClick={() => handleChip(q)}>
+              {QUICK_ACTIONS.map((q, idx) => (
+                <button
+                  key={q}
+                  className="quick-chip"
+                  onClick={() => handleChip(q)}
+                  style={{ animationDelay: `${idx * 0.08}s` }}
+                >
                   {q}
                 </button>
               ))}

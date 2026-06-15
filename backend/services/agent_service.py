@@ -229,6 +229,7 @@ Formatting Guidelines for the chosen Channel ({channel}):
 - If channel is WhatsApp: Write a highly engaging message using emojis, keep it relatively short (under 4-5 sentences), and sound friendly.
 - If channel is Email: Provide a clear, catchy subject line (Subject: <subject>) followed by the email body. Keep it professional yet persuasive.
 - If channel is SMS: Write an extremely concise, punchy text message under 160 characters. Do not include subject lines or HTML, just pure SMS copy.
+- If channel is RCS: Write a highly engaging rich text message (under 3-4 sentences) using emojis, and explicitly include 2 suggested action replies/chips (e.g. Reply: "View Deals", Reply: "Opt Out") at the bottom of the message.
 
 Please return your response with:
 Campaign Name: <A punchy name for this campaign>
