@@ -507,27 +507,37 @@ function AiMessage({ msg, onAction, disabled, currentChannel, onChannelChange, o
 /* ── Summary Panel ── */
 function SummaryPanel({ summary }) {
   const cards = [
-    { key: 'goal', emoji: '🎯', title: 'Goal' },
-    { key: 'insight', emoji: '📊', title: 'Insight' },
-    { key: 'strategy', emoji: '✨', title: 'Strategy' },
-    { key: 'campaign', emoji: '💬', title: 'Campaign' },
+    { key: 'goal', emoji: '🎯', title: 'Goal', placeholder: 'Awaiting goal classification...' },
+    { key: 'insight', emoji: '📊', title: 'Insight', placeholder: 'Awaiting cohort analysis...' },
+    { key: 'strategy', emoji: '✨', title: 'Strategy', placeholder: 'Awaiting delivery strategy...' },
+    { key: 'campaign', emoji: '💬', title: 'Campaign', placeholder: 'Awaiting live broadcast...' },
   ];
 
   return (
     <div className="summary-panel">
-      <div className="summary-header">Conversation Summary</div>
+      <div className="summary-header">
+        <div className="summary-header-top">
+          <span className="summary-header-dot" />
+          <span className="summary-header-title">Live Summary</span>
+        </div>
+        <div className="summary-header-subtitle">Real-time workspace insights</div>
+      </div>
       <div className="summary-cards">
-        {cards.map(({ key, emoji, title }) => (
-          <div key={key} className={`summary-card${summary[key] ? ' filled' : ''}`}>
-            <div className="summary-card-top">
-              <span className="summary-card-emoji">{emoji}</span>
-              <span className="summary-card-title">{title}</span>
+        {cards.map(({ key, emoji, title, placeholder }) => {
+          const val = summary[key];
+          return (
+            <div key={key} className={`summary-card ${key} ${val ? 'filled' : 'empty'}`}>
+              <div className="summary-card-top">
+                <span className="summary-card-emoji">{emoji}</span>
+                <span className="summary-card-title">{title}</span>
+                {val && <span className="summary-card-check">✓</span>}
+              </div>
+              <div className="summary-card-value">
+                {val || placeholder}
+              </div>
             </div>
-            <div className="summary-card-value">
-              {summary[key] || '—'}
-            </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

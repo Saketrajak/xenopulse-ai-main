@@ -930,9 +930,47 @@ html[data-theme="dark"] .chat-input-wrap {
 .summary-header {
   padding: 20px 20px 16px;
   border-bottom: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.summary-header-top {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.summary-header-dot {
+  width: 8px;
+  height: 8px;
+  background: var(--brand);
+  border-radius: 50%;
+  position: relative;
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+.summary-header-dot::after {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  background: var(--brand);
+  opacity: .35;
+  animation: pulse-ring 1.5s ease infinite;
+}
+
+.summary-header-title {
   font-size: 14px;
   font-weight: 700;
   color: var(--text-1);
+  letter-spacing: -0.2px;
+}
+
+.summary-header-subtitle {
+  font-size: 11px;
+  color: var(--text-3);
 }
 
 .summary-cards {
@@ -946,21 +984,40 @@ html[data-theme="dark"] .chat-input-wrap {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 14px;
+  padding: 14px 16px;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   animation: fadeUp 0.3s ease both;
+  position: relative;
+  overflow: hidden;
+  border-left: 4px solid var(--border-2); /* Thick 4px left border accent */
+}
+
+/* Filled active cards all light up with brand blue left border */
+.summary-card.filled {
+  border-left-color: var(--brand);
+  border-color: rgba(37, 99, 235, 0.15);
+  background: linear-gradient(135deg, rgba(37, 99, 235, 0.04), rgba(37, 99, 235, 0.01));
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.03);
+}
+
+.summary-card.empty {
+  opacity: 0.65;
+  background: rgba(0, 0, 0, 0.01);
+}
+
+html[data-theme="dark"] .summary-card.empty {
+  background: rgba(255, 255, 255, 0.01);
 }
 
 .summary-card:hover {
-  transform: translateY(-2px);
+  transform: translateY(-2.5px);
   box-shadow: var(--shadow-md);
   border-color: var(--border-2);
 }
 
-.summary-card.filled {
-  border-color: var(--brand);
-  background: linear-gradient(135deg, rgba(37, 99, 235, 0.04), rgba(139, 92, 246, 0.04));
-  box-shadow: 0 4px 20px rgba(37, 99, 235, 0.08);
+.summary-card.filled:hover {
+  border-color: rgba(37, 99, 235, 0.3);
+  box-shadow: 0 6px 16px rgba(37, 99, 235, 0.06);
 }
 
 .summary-card-top {
@@ -980,17 +1037,45 @@ html[data-theme="dark"] .chat-input-wrap {
   color: var(--text-3);
   text-transform: uppercase;
   letter-spacing: .5px;
+  flex: 1;
 }
 
 .summary-card.filled .summary-card-title {
   color: var(--brand);
 }
 
+.summary-card-check {
+  font-size: 11px;
+  font-weight: 800;
+  background: var(--brand-light);
+  color: var(--brand);
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) both;
+}
+
+@keyframes popIn {
+  from { transform: scale(0); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
 .summary-card-value {
-  font-size: 13px;
+  font-size: 13.5px;
   font-weight: 600;
-  color: var(--text-3);
+  color: var(--text-2);
   line-height: 1.4;
+  transition: color 0.2s ease;
+}
+
+.summary-card.empty .summary-card-value {
+  color: var(--text-3);
+  font-style: italic;
+  font-weight: 400;
+  font-size: 12px;
 }
 
 .summary-card.filled .summary-card-value {
