@@ -256,7 +256,9 @@ export default function WorkspacePage() {
 
       const actions = [];
       if (res.actions?.includes('USE_DEMO_DATA')) {
-        actions.push({ key: 'USE_DEMO_DATA', label: '📊 Use Demo Data', variant: 'primary' });
+        actions.push({ key: 'USE_DEMO_COFFEE',  label: '☕ Coffee Shop Demo', variant: 'primary' });
+        actions.push({ key: 'USE_DEMO_FASHION', label: '👗 Fashion Retail Demo', variant: 'primary' });
+        actions.push({ key: 'USE_DEMO_SAAS',    label: '💻 SaaS Platform Demo', variant: 'primary' });
       }
       if (res.actions?.includes('UPLOAD_DATA')) {
         actions.push({ key: 'UPLOAD_DATA', label: '📤 Upload Data', variant: 'secondary' });
@@ -288,9 +290,12 @@ export default function WorkspacePage() {
     setLoading(true);
 
     try {
-      if (key === 'USE_DEMO_DATA') {
-        pushUser('Use demo data');
-        const res = await api.agentUseDemo(classifiedGoal);
+      if (key === 'USE_DEMO_COFFEE' || key === 'USE_DEMO_FASHION' || key === 'USE_DEMO_SAAS') {
+        const preset = key === 'USE_DEMO_COFFEE' ? 'coffee' : key === 'USE_DEMO_FASHION' ? 'fashion' : 'saas';
+        const label = key === 'USE_DEMO_COFFEE' ? 'Coffee Shop preset' : key === 'USE_DEMO_FASHION' ? 'Fashion Retail preset' : 'SaaS Platform preset';
+
+        pushUser(`Load ${label}`);
+        const res = await api.agentUseDemo(classifiedGoal, preset);
         const { thinking, decision, action_plan, actions } = res;
 
         // Get raw insights for the grid
@@ -394,7 +399,7 @@ export default function WorkspacePage() {
         setPhase('LAUNCHED');
 
       } else if (key === 'UPLOAD_DATA') {
-        pushAi({ text: 'CSV upload is coming soon! For now, try our demo data to see the full AI flow.' });
+        pushAi({ text: '📤 CSV Upload: This feature is currently disabled in the preview environment to prevent rate-limiting and performance load. It will be enabled in the production version. Please try one of our interactive presets instead!' });
       } else if (key === 'UPLOAD_CUSTOM_MESSAGE') {
         pushAi({
           text: 'Custom message upload is coming soon. For now, let me generate an AI campaign for you.',

@@ -1,5 +1,11 @@
 import json
 import re
+import random
+from datetime import datetime, timedelta
+
+from database.database import SessionLocal
+from models.customer import Customer
+from models.order import Order
 
 from services.segmentation_service import (
     get_audience_insights
@@ -88,58 +94,122 @@ def get_campaign_type(goal: str) -> str:
         return "Marketing Campaign"
 
 
-def analyze_demo_data(goal="RETENTION"):
+def generate_preset_data(db, preset: str):
+    db.query(Order).delete()
+    db.query(Customer).delete()
+    db.commit()
 
-    insights = get_audience_insights()
-    campaign_name_type = get_campaign_type(goal)
+    preset = str(preset).lower()
 
-    return {
+    if "coffee" in preset:
+        cities = ["Mumbai", "Delhi", "Bangalore", "Pune", "Chennai"]
+        channels = ["WhatsApp", "WhatsApp", "WhatsApp", "Email", "SMS"]
+        categories = ["Coffee", "Bakery", "Beverages"]
+        customer_count = 500
+        order_count = 1500
+        min_spend, max_spend = 100.0, 1500.0
+        min_order, max_order = 50.0, 300.0
+    elif "fashion" in preset:
+        cities = ["Jaipur", "Ahmedabad", "Surat", "Indore", "Delhi"]
+        channels = ["SMS", "SMS", "SMS", "WhatsApp", "Email"]
+        categories = ["Apparel", "Footwear", "Accessories"]
+        customer_count = 500
+        order_count = 1200
+        min_spend, max_spend = 1500.0, 8000.0
+        min_order, max_order = 500.0, 2500.0
+    else:
+        cities = ["Bangalore", "Hyderabad", "Noida", "Gurugram", "Pune"]
+        channels = ["Email", "Email", "Email", "WhatsApp", "SMS"]
+        categories = ["SaaS Subscription", "API Credits", "Premium Support"]
+        customer_count = 500
+        order_count = 1000
+        min_spend, max_spend = 10000.0, 25000.0
+        min_order, max_order = 2000.0, 10000.0
 
-        "agent_state": "STRATEGY_READY",
+    names = [
+        "Aarav Sharma", "Vivaan Patel", "Aditya Verma", "Vihaan Gupta", "Arjun Reddy",
+        "Sai Kiran", "Reyansh Kapoor", "Krishna Murthy", "Ishaan Roy", "Shaurya Joshi",
+        "Diya Sen", "Ananya Mishra", "Aadhya Nair", "Pari Choudhury", "Pihu Das",
+        "Ira Banerjee", "Saisha Kulkarni", "Prisha Bhat", "Aanya Saxena", "Navya Rao"
+    ]
+    
+    for i in range(1, customer_count + 1):
+        name = random.choice(names) + f" #{i}"
+        email = f"user_{i}@{preset if 'coffee' in preset or 'fashion' in preset or 'saas' in preset else 'saas'}-shop.com"
+        city = random.choice(cities)
+        pref_channel = random.choice(channels)
+        total_spend = round(random.uniform(min_spend, max_spend), 2)
+        last_purchase = datetime.now().date() - timedelta(days=random.randint(1, 180))
 
-        "thinking": {
+        customer = Customer(
+            id=i,
+            name=name,
+            email=email,
+            city=city,
+            preferred_channel=pref_channel,
+            total_spend=total_spend,
+            last_purchase_date=last_purchase
+        )
+        db.add(customer)
 
-            "customer_behavior":
-                f"{insights['audience_size']} customers appear inactive",
+    for o in range(1, order_count + 1):
+        cust_id = random.randint(1, customer_count)
+        amount = round(random.uniform(min_order, max_order), 2)
+        cat = random.choice(categories)
+        order_date = datetime.now().date() - timedelta(days=random.randint(1, 365))
 
-            "engagement_pattern":
-                f"{insights['preferred_channel']} is the dominant engagement channel",
+        order = Order(
+            id=o,
+            customer_id=cust_id,
+            amount=amount,
+            category=cat,
+            order_date=order_date
+        )
+        db.add(order)
 
-            "value_assessment":
-                f"Average customer spend is ₹{insights['avg_spend']}"
-        },
+    db.commit()
 
-        "decision": {
 
-            "audience":
-                f"{insights['audience_size']} inactive customers",
+def analyze_demo_data(goal="RETENTION", preset="saas"):
+    db = SessionLocal()
+    try:
+        generate_preset_data(db, preset)
+        insights = get_audience_insights()
+        campaign_name_type = get_campaign_type(goal)
 
-            "channel":
-                insights["preferred_channel"],
-
-            "campaign_type":
-                campaign_name_type
-        },
-
-        "action_plan": {
-
-            "objective":
-                f"Run a {campaign_name_type} targeting inactive customers",
-
-            "expected_impact":
-                "Medium-High",
-
-            "next_step":
-                "Choose campaign channel and message source"
-        },
-
-        "actions": [
-
-            "GENERATE_AI_CAMPAIGN",
-
-            "UPLOAD_CUSTOM_MESSAGE"
-        ]
-    }
+        return {
+            "agent_state": "STRATEGY_READY",
+            "thinking": {
+                "customer_behavior":
+                    f"{insights['audience_size']} customers appear inactive",
+                "engagement_pattern":
+                    f"{insights['preferred_channel']} is the dominant engagement channel",
+                "value_assessment":
+                    f"Average customer spend is ₹{insights['avg_spend']}"
+            },
+            "decision": {
+                "audience":
+                    f"{insights['audience_size']} inactive customers",
+                "channel":
+                    insights["preferred_channel"],
+                "campaign_type":
+                    campaign_name_type
+            },
+            "action_plan": {
+                "objective":
+                    f"Run a {campaign_name_type} targeting inactive customers",
+                "expected_impact":
+                    "Medium-High",
+                "next_step":
+                    "Choose campaign channel and message source"
+            },
+            "actions": [
+                "GENERATE_AI_CAMPAIGN",
+                "UPLOAD_CUSTOM_MESSAGE"
+            ]
+        }
+    finally:
+        db.close()
 
 
 def generate_campaign_draft(goal="WINBACK", channel="WhatsApp"):

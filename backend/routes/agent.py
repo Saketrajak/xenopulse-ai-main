@@ -61,11 +61,12 @@ def chat(request: ChatRequest):
 
 class UseDemoRequest(BaseModel):
     goal: str = "RETENTION"
+    preset: str = "saas"
 
 
 @router.post("/agent/use-demo")
 def use_demo(request: UseDemoRequest = UseDemoRequest()):
-    return analyze_demo_data(goal=request.goal)
+    return analyze_demo_data(goal=request.goal, preset=request.preset)
 
 
 class GenerateCampaignRequest(BaseModel):
