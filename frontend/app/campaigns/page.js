@@ -5,19 +5,19 @@ import { api } from '../lib/api';
 const CHANNELS = ['WhatsApp', 'Email', 'SMS'];
 const GOALS    = ['RETENTION', 'WINBACK', 'UPSELL', 'REACTIVATION', 'ENGAGEMENT'];
 
-const defaultForm = {
+const getDefaultForm = () => ({
   campaign_name: '',
   goal: 'WINBACK',
   channel: 'WhatsApp',
-  audience_size: 50,
-};
+  audience_size: Math.floor(Math.random() * (300 - 50 + 1)) + 50,
+});
 
 export default function CampaignsPage() {
   const [campaigns, setCampaigns]   = useState([]);
   const [stats, setStats]           = useState(null);
   const [audience, setAudience]     = useState(null);
   const [showModal, setShowModal]   = useState(false);
-  const [form, setForm]             = useState(defaultForm);
+  const [form, setForm]             = useState(getDefaultForm());
   const [launching, setLaunching]   = useState(false);
   const [selected, setSelected]     = useState(null);
   const [analytics, setAnalytics]   = useState(null);
@@ -60,7 +60,7 @@ export default function CampaignsPage() {
       setCampaigns(updated);
       localStorage.setItem('xp_campaigns', JSON.stringify(updated));
 
-      setForm(defaultForm);
+      setForm(getDefaultForm());
       setShowModal(false);
     } catch (err) {
       alert(`Launch failed: ${err.message}`);

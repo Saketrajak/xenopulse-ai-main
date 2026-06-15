@@ -199,7 +199,9 @@ export default function WorkspacePage() {
     try {
       const res = await api.agentChat(trimmed);
 
-      setSummary(s => ({ ...s, goal: trimmed }));
+      // Use AI-determined goal label (cleaner than raw user text)
+      const goalLabel = res.goal_label || trimmed;
+      setSummary(s => ({ ...s, goal: goalLabel }));
 
       const actions = [];
       if (res.actions?.includes('USE_DEMO_DATA')) {
@@ -222,6 +224,7 @@ export default function WorkspacePage() {
     }
   };
 
+
   /* ── Handle action button clicks ── */
   const handleAction = async (key) => {
     if (loading) return;
@@ -241,6 +244,10 @@ export default function WorkspacePage() {
 
         // Get raw insights for the grid
         const insights = await api.audiencePreview();
+        
+        // Randomize audience size between 50 and 300 for demo data flow
+        const randomAudience = Math.floor(Math.random() * (300 - 50 + 1)) + 50;
+        insights.audience_size = randomAudience;
 
         setSummary(s => ({
           ...s,
@@ -281,7 +288,7 @@ export default function WorkspacePage() {
                 campaign_name: 'Win-Back Campaign',
                 goal: 'WINBACK',
                 channel: res.channel || draftPayload?.channel || 'WhatsApp',
-                audience_size: Math.min(draftPayload?.audience_size || 50, 50),
+                audience_size: draftPayload?.audience_size || 50,
               },
             },
           ],
@@ -295,7 +302,7 @@ export default function WorkspacePage() {
           campaign_name: 'Win-Back Campaign',
           goal: 'WINBACK',
           channel: draftPayload?.channel || 'WhatsApp',
-          audience_size: Math.min(draftPayload?.audience_size || 50, 50),
+          audience_size: draftPayload?.audience_size || 50,
         };
 
         const res = await api.launchCampaign(payload);
