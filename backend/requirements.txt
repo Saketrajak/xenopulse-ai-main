@@ -6,3 +6,5 @@ pandas
 faker
 requests
 google-generativeai
+python-multipart
+
