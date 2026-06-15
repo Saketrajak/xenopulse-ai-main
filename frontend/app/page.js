@@ -10,6 +10,15 @@ function getGreeting() {
   return 'Good Evening';
 }
 
+function getCampaignFriendlyName(goal) {
+  const g = String(goal).toUpperCase();
+  if (g.includes('WINBACK')) return 'Win-Back Campaign';
+  if (g.includes('RETENTION')) return 'Retention Campaign';
+  if (g.includes('UPSELL')) return 'Upsell Campaign';
+  if (g.includes('ENGAGEMENT')) return 'Engagement Campaign';
+  return 'Marketing Campaign';
+}
+
 const QUICK_ACTIONS = [
   'Bring Back Inactive Customers',
   'Increase Repeat Purchases',
@@ -49,7 +58,7 @@ function UserMessage({ text }) {
   );
 }
 
-function AiMessage({ msg, onAction, disabled }) {
+function AiMessage({ msg, onAction, disabled, currentChannel, onChannelChange }) {
   return (
     <div className="msg-row ai anim-fadeUp">
       <div className="ai-avatar">
@@ -104,6 +113,44 @@ function AiMessage({ msg, onAction, disabled }) {
               <div>
                 <div className="success-title">{msg.success.title}</div>
                 <div className="success-sub">{msg.success.subtitle}</div>
+              </div>
+            </div>
+          )}
+
+          {/* Channel Selector - show only when insights are loaded and action buttons are present */}
+          {msg.insights && msg.actions?.length > 0 && onChannelChange && (
+            <div style={{ marginTop: 16, marginBottom: 12, borderTop: '1px solid var(--border)', paddingTop: 12 }}>
+              <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>
+                Select Delivery Channel:
+              </div>
+              <div style={{ display: 'flex', gap: 8 }}>
+                {[
+                  { id: 'WhatsApp', label: '💬 WhatsApp', color: '#10B981' },
+                  { id: 'Email',    label: '📧 Email',    color: '#2563EB' },
+                  { id: 'SMS',      label: '📱 SMS',      color: '#F59E0B' },
+                ].map(ch => {
+                  const active = currentChannel === ch.id;
+                  return (
+                    <button
+                      key={ch.id}
+                      disabled={disabled}
+                      onClick={() => onChannelChange(ch.id)}
+                      style={{
+                        padding: '6px 12px',
+                        borderRadius: 'var(--radius)',
+                        fontSize: 12,
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                        border: active ? `1.5px solid ${ch.color}` : '1.5px solid var(--border)',
+                        background: active ? `${ch.color}15` : 'var(--surface-2)',
+                        color: active ? ch.color : 'var(--text-2)',
+                        transition: 'all 0.2s ease',
+                      }}
+                    >
+                      {ch.label}
+                    </button>
+                  );
+                })}
               </div>
             </div>
           )}
@@ -166,6 +213,7 @@ export default function WorkspacePage() {
   const [loading,  setLoading]      = useState(false);
   const [phase,    setPhase]        = useState('INITIAL');
   const [draftPayload, setDraftPayload] = useState(null);
+  const [classifiedGoal, setClassifiedGoal] = useState('WINBACK');
   const bottomRef = useRef(null);
   const inputRef  = useRef(null);
 
@@ -199,6 +247,9 @@ export default function WorkspacePage() {
     try {
       const res = await api.agentChat(trimmed);
 
+      // Save raw classified goal intent (e.g. WINBACK, RETENTION)
+      setClassifiedGoal(res.goal || 'WINBACK');
+
       // Use AI-determined goal label (cleaner than raw user text)
       const goalLabel = res.goal_label || trimmed;
       setSummary(s => ({ ...s, goal: goalLabel }));
@@ -224,6 +275,12 @@ export default function WorkspacePage() {
     }
   };
 
+  const handleChannelChange = (channel) => {
+    setDraftPayload(prev => ({
+      ...prev,
+      channel
+    }));
+  };
 
   /* ── Handle action button clicks ── */
   const handleAction = async (key) => {
@@ -233,14 +290,8 @@ export default function WorkspacePage() {
     try {
       if (key === 'USE_DEMO_DATA') {
         pushUser('Use demo data');
-        const res = await api.agentUseDemo();
+        const res = await api.agentUseDemo(classifiedGoal);
         const { thinking, decision, action_plan, actions } = res;
-
-        const insightText = [
-          thinking?.customer_behavior,
-          thinking?.engagement_pattern,
-          thinking?.value_assessment,
-        ].filter(Boolean).join(' · ');
 
         // Get raw insights for the grid
         const insights = await api.audiencePreview();
@@ -272,7 +323,17 @@ export default function WorkspacePage() {
 
       } else if (key === 'GENERATE_AI_CAMPAIGN') {
         pushUser('Generate AI campaign');
-        const res = await api.agentGenerateCampaign();
+        const selectedChannel = draftPayload?.channel || 'WhatsApp';
+        const res = await api.agentGenerateCampaign(classifiedGoal, selectedChannel);
+
+        // Parse campaign name if present in the AI response
+        const nameMatch = res.campaign_draft?.match(/Campaign Name:\s*(.*)/i);
+        const parsedName = nameMatch ? nameMatch[1].trim() : undefined;
+
+        setDraftPayload(prev => ({
+          ...prev,
+          campaign_name: parsedName || prev?.campaign_name || getCampaignFriendlyName(classifiedGoal)
+        }));
 
         setSummary(s => ({ ...s, campaign: 'Draft ready for review' }));
 
@@ -285,9 +346,9 @@ export default function WorkspacePage() {
               label: '🚀 Launch Campaign',
               variant: 'primary',
               payload: {
-                campaign_name: 'Win-Back Campaign',
-                goal: 'WINBACK',
-                channel: res.channel || draftPayload?.channel || 'WhatsApp',
+                campaign_name: parsedName || draftPayload?.campaign_name || getCampaignFriendlyName(classifiedGoal),
+                goal: classifiedGoal || 'WINBACK',
+                channel: selectedChannel,
                 audience_size: draftPayload?.audience_size || 50,
               },
             },
@@ -299,8 +360,8 @@ export default function WorkspacePage() {
       } else if (key === 'LAUNCH_CAMPAIGN') {
         pushUser('Launch campaign now');
         const payload = {
-          campaign_name: 'Win-Back Campaign',
-          goal: 'WINBACK',
+          campaign_name: draftPayload?.campaign_name || getCampaignFriendlyName(classifiedGoal),
+          goal: classifiedGoal || 'WINBACK',
           channel: draftPayload?.channel || 'WhatsApp',
           audience_size: draftPayload?.audience_size || 50,
         };
@@ -391,7 +452,14 @@ export default function WorkspacePage() {
           {messages.map((msg, i) =>
             msg.type === 'user'
               ? <UserMessage key={i} text={msg.text} />
-              : <AiMessage   key={i} msg={msg} onAction={handleAction} disabled={loading} />
+              : <AiMessage
+                  key={i}
+                  msg={msg}
+                  onAction={handleAction}
+                  disabled={loading}
+                  currentChannel={draftPayload?.channel || 'WhatsApp'}
+                  onChannelChange={handleChannelChange}
+                />
           )}
           {loading && <TypingIndicator />}
           <div ref={bottomRef} />

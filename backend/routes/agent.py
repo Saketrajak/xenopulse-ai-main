@@ -59,11 +59,20 @@ def chat(request: ChatRequest):
     }
 
 
+class UseDemoRequest(BaseModel):
+    goal: str = "RETENTION"
+
+
 @router.post("/agent/use-demo")
-def use_demo():
-    return analyze_demo_data(goal="RETENTION")
+def use_demo(request: UseDemoRequest = UseDemoRequest()):
+    return analyze_demo_data(goal=request.goal)
+
+
+class GenerateCampaignRequest(BaseModel):
+    goal: str = "WINBACK"
+    channel: str = "WhatsApp"
 
 
 @router.post("/agent/generate-campaign")
-def generate_campaign():
-    return generate_campaign_draft()
+def generate_campaign(request: GenerateCampaignRequest = GenerateCampaignRequest()):
+    return generate_campaign_draft(goal=request.goal, channel=request.channel)

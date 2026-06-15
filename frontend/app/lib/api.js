@@ -24,8 +24,8 @@ export const api = {
   // Agent Flow
   agentChat: (message) =>
     req('/agent/chat', { method: 'POST', body: JSON.stringify({ message }) }),
-  agentUseDemo: () => req('/agent/use-demo', { method: 'POST' }),
-  agentGenerateCampaign: () => req('/agent/generate-campaign', { method: 'POST' }),
+  agentUseDemo: (goal) => req('/agent/use-demo', { method: 'POST', body: JSON.stringify({ goal }) }),
+  agentGenerateCampaign: (goal, channel) => req('/agent/generate-campaign', { method: 'POST', body: JSON.stringify({ goal, channel }) }),
 
   // Campaigns
   planCampaign: (goal) =>

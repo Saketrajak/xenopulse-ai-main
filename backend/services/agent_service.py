@@ -74,9 +74,24 @@ For UNRELATED, set needs_data to false."""
         return None
 
 
-def analyze_demo_data(goal):
+def get_campaign_type(goal: str) -> str:
+    goal_upper = str(goal).upper()
+    if "WINBACK" in goal_upper:
+        return "Win-Back Campaign"
+    elif "RETENTION" in goal_upper:
+        return "Retention Campaign"
+    elif "UPSELL" in goal_upper:
+        return "Upsell Campaign"
+    elif "ENGAGEMENT" in goal_upper:
+        return "Engagement Campaign"
+    else:
+        return "Marketing Campaign"
+
+
+def analyze_demo_data(goal="RETENTION"):
 
     insights = get_audience_insights()
+    campaign_name_type = get_campaign_type(goal)
 
     return {
 
@@ -103,19 +118,19 @@ def analyze_demo_data(goal):
                 insights["preferred_channel"],
 
             "campaign_type":
-                "Win-Back Campaign"
+                campaign_name_type
         },
 
         "action_plan": {
 
             "objective":
-                "Re-engage inactive customers",
+                f"Run a {campaign_name_type} targeting inactive customers",
 
             "expected_impact":
                 "Medium-High",
 
             "next_step":
-                "Choose campaign message source"
+                "Choose campaign channel and message source"
         },
 
         "actions": [
@@ -127,29 +142,26 @@ def analyze_demo_data(goal):
     }
 
 
-def generate_campaign_draft():
+def generate_campaign_draft(goal="WINBACK", channel="WhatsApp"):
+    campaign_name_type = get_campaign_type(goal)
 
-    prompt = """
-You are an expert marketing strategist.
+    prompt = f"""
+You are an expert marketing strategist inside XenoPulse AI marketing copilot.
 
-Create a win-back campaign.
+Create a campaign draft for:
+Campaign Type: {campaign_name_type}
+Goal/Intent: {goal}
+Target Audience: Inactive customer segment
+Channel: {channel}
 
-Audience:
-Inactive customers
+Formatting Guidelines for the chosen Channel ({channel}):
+- If channel is WhatsApp: Write a highly engaging message using emojis, keep it relatively short (under 4-5 sentences), and sound friendly.
+- If channel is Email: Provide a clear, catchy subject line (Subject: <subject>) followed by the email body. Keep it professional yet persuasive.
+- If channel is SMS: Write an extremely concise, punchy text message under 160 characters. Do not include subject lines or HTML, just pure SMS copy.
 
-Channel:
-WhatsApp
-
-Goal:
-Re-engage inactive customers.
-
-Return:
-
-Campaign Name:
-<name>
-
-Message:
-<message>
+Please return your response with:
+Campaign Name: <A punchy name for this campaign>
+Message: <The generated message template>
 """
 
     ai_response = generate_content(
@@ -162,7 +174,7 @@ Message:
             "CAMPAIGN_DRAFT_READY",
 
         "channel":
-            "WhatsApp",
+            channel,
 
         "campaign_draft":
             ai_response,
