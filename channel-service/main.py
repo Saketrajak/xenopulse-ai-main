@@ -4,6 +4,9 @@ from pydantic import BaseModel
 import random
 import time
 import requests
+import os
+
+BACKEND_URL = os.getenv("BACKEND_URL", "http://127.0.0.1:8000")
 
 app = FastAPI(
     title="Xeno Channel Service"
@@ -31,7 +34,7 @@ def send_callback(
     try:
 
         requests.post(
-            "http://127.0.0.1:8000/communications/receipt",
+            f"{BACKEND_URL}/communications/receipt",
             json={
                 "communication_id": communication_id,
                 "status": status,

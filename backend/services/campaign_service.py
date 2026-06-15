@@ -6,6 +6,9 @@ from models.communication_log import CommunicationLog
 
 from datetime import datetime
 import requests
+import os
+
+CHANNEL_SERVICE_URL = os.getenv("CHANNEL_SERVICE_URL", "http://127.0.0.1:8001")
 
 
 def launch_campaign(
@@ -58,7 +61,7 @@ def launch_campaign(
             try:
 
                 requests.post(
-                    "http://127.0.0.1:8001/send",
+                    f"{CHANNEL_SERVICE_URL}/send",
                     json={
                         "communication_id": log.id,
                         "customer_id": customer.id,
