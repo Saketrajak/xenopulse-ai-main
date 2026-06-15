@@ -33,4 +33,14 @@ export const api = {
   launchCampaign: (data) =>
     req('/campaigns/launch', { method: 'POST', body: JSON.stringify(data) }),
   campaignAnalytics: (id) => req(`/campaigns/${id}/analytics`),
+
+  // Ingestion
+  uploadCSV: (formData) =>
+    fetch(`${BASE}/upload/csv`, {
+      method: 'POST',
+      body: formData,
+    }).then(res => {
+      if (!res.ok) return res.json().then(data => { throw new Error(data.detail || 'Upload failed') });
+      return res.json();
+    }),
 };

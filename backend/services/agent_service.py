@@ -173,7 +173,8 @@ def generate_preset_data(db, preset: str):
 def analyze_demo_data(goal="RETENTION", preset="saas"):
     db = SessionLocal()
     try:
-        generate_preset_data(db, preset)
+        if preset != "uploaded":
+            generate_preset_data(db, preset)
         insights = get_audience_insights()
         campaign_name_type = get_campaign_type(goal)
 

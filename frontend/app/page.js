@@ -58,7 +58,12 @@ function UserMessage({ text }) {
   );
 }
 
-function AiMessage({ msg, onAction, disabled, currentChannel, onChannelChange }) {
+function AiMessage({ msg, onAction, disabled, currentChannel, onChannelChange, onUpload }) {
+  const [custFile, setCustFile] = useState(null);
+  const [ordFile, setOrdFile] = useState(null);
+  const [uploading, setUploading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
+
   return (
     <div className="msg-row ai anim-fadeUp">
       <div className="ai-avatar">
@@ -114,6 +119,102 @@ function AiMessage({ msg, onAction, disabled, currentChannel, onChannelChange })
                 <div className="success-title">{msg.success.title}</div>
                 <div className="success-sub">{msg.success.subtitle}</div>
               </div>
+            </div>
+          )}
+
+          {/* CSV Upload form area */}
+          {msg.showUploadArea && (
+            <div style={{ marginTop: 16, borderTop: '1px solid var(--border)', paddingTop: 16 }}>
+              <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-1)', marginBottom: 12 }}>
+                📁 Select CSV Files to Ingest
+              </div>
+
+              {/* Customers Input */}
+              <div style={{ marginBottom: 12 }}>
+                <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: 'var(--text-2)', marginBottom: 4 }}>
+                  1. Customers CSV File:
+                </label>
+                <input
+                  type="file"
+                  accept=".csv"
+                  disabled={uploading || disabled}
+                  onChange={e => {
+                    setCustFile(e.target.files[0]);
+                    setErrorMsg('');
+                  }}
+                  style={{
+                    display: 'block',
+                    width: '100%',
+                    fontSize: 12,
+                    padding: '8px',
+                    borderRadius: 'var(--radius)',
+                    background: 'var(--surface-2)',
+                    border: '1px solid var(--border)',
+                  }}
+                />
+                <span style={{ fontSize: 10, color: 'var(--text-3)' }}>
+                  Required columns: <code>customer_id, name, email, city, preferred_channel, total_spend, last_purchase_date</code>
+                </span>
+              </div>
+
+              {/* Orders Input */}
+              <div style={{ marginBottom: 16 }}>
+                <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: 'var(--text-2)', marginBottom: 4 }}>
+                  2. Orders CSV File:
+                </label>
+                <input
+                  type="file"
+                  accept=".csv"
+                  disabled={uploading || disabled}
+                  onChange={e => {
+                    setOrdFile(e.target.files[0]);
+                    setErrorMsg('');
+                  }}
+                  style={{
+                    display: 'block',
+                    width: '100%',
+                    fontSize: 12,
+                    padding: '8px',
+                    borderRadius: 'var(--radius)',
+                    background: 'var(--surface-2)',
+                    border: '1px solid var(--border)',
+                  }}
+                />
+                <span style={{ fontSize: 10, color: 'var(--text-3)' }}>
+                  Required columns: <code>order_id, customer_id, amount, category, order_date</code>
+                </span>
+              </div>
+
+              {errorMsg && (
+                <div style={{ color: 'var(--red)', fontSize: 11, fontWeight: 600, marginBottom: 12 }}>
+                  ⚠️ {errorMsg}
+                </div>
+              )}
+
+              <button
+                disabled={!custFile || !ordFile || uploading || disabled}
+                onClick={async () => {
+                  setUploading(true);
+                  setErrorMsg('');
+                  try {
+                    const formData = new FormData();
+                    formData.append('customers_file', custFile);
+                    formData.append('orders_file', ordFile);
+                    const res = await api.uploadCSV(formData);
+                    if (onUpload) {
+                      onUpload(res);
+                    }
+                  } catch (err) {
+                    setErrorMsg(err.message || 'Upload failed. Please check the file formatting.');
+                  } finally {
+                    setUploading(false);
+                  }
+                }}
+                className="btn btn-primary"
+                style={{ width: '100%', padding: '10px', fontSize: 12 }}
+              >
+                {uploading ? 'Ingesting data...' : '📤 Ingest & Analyze'}
+              </button>
             </div>
           )}
 
@@ -300,10 +401,6 @@ export default function WorkspacePage() {
 
         // Get raw insights for the grid
         const insights = await api.audiencePreview();
-        
-        // Randomize audience size between 50 and 300 for demo data flow
-        const randomAudience = Math.floor(Math.random() * (300 - 50 + 1)) + 50;
-        insights.audience_size = randomAudience;
 
         setSummary(s => ({
           ...s,
@@ -399,7 +496,12 @@ export default function WorkspacePage() {
         setPhase('LAUNCHED');
 
       } else if (key === 'UPLOAD_DATA') {
-        pushAi({ text: '📤 CSV Upload: This feature is currently disabled in the preview environment to prevent rate-limiting and performance load. It will be enabled in the production version. Please try one of our interactive presets instead!' });
+        pushUser('Upload customer data');
+        pushAi({
+          text: 'Select your customers and orders CSV files below to ingest them into XenoPulse AI.',
+          showUploadArea: true,
+        });
+        setPhase('NEEDS_DATA');
       } else if (key === 'UPLOAD_CUSTOM_MESSAGE') {
         pushAi({
           text: 'Custom message upload is coming soon. For now, let me generate an AI campaign for you.',
@@ -408,6 +510,45 @@ export default function WorkspacePage() {
       }
     } catch (err) {
       pushAi({ text: `Something went wrong: ${err.message}. Please try again.` });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleUploadSuccess = async (res) => {
+    pushUser(`Uploaded files successfully: ${res.customers_loaded} customers, ${res.orders_loaded} orders ingested.`);
+    setLoading(true);
+
+    try {
+      // Analyze newly uploaded data from DB
+      const demoRes = await api.agentUseDemo(classifiedGoal, 'uploaded');
+      const { thinking, decision, action_plan, actions } = demoRes;
+
+      const insights = await api.audiencePreview();
+
+      setSummary(s => ({
+        ...s,
+        insight:  `${insights.audience_size?.toLocaleString()} dormant customers identified`,
+        strategy: `${decision?.channel} ${decision?.campaign_type}`,
+      }));
+
+      const nextActions = [];
+      if (actions?.includes('GENERATE_AI_CAMPAIGN')) {
+        nextActions.push({ key: 'GENERATE_AI_CAMPAIGN', label: '🤖 Generate AI Campaign', variant: 'primary' });
+      }
+      nextActions.push({ key: 'UPLOAD_CUSTOM_MESSAGE', label: '✏️ Use Custom Message', variant: 'secondary' });
+
+      pushAi({
+        text: `Ingestion complete. I've analyzed your customer segment. Here is the summary of your uploaded data:`,
+        insights,
+        actions: nextActions,
+      });
+
+      setPhase('STRATEGY_READY');
+      setDraftPayload({ channel: decision?.channel || 'WhatsApp', audience_size: insights.audience_size });
+
+    } catch (err) {
+      pushAi({ text: `Failed to analyze uploaded data: ${err.message}` });
     } finally {
       setLoading(false);
     }
@@ -464,6 +605,7 @@ export default function WorkspacePage() {
                   disabled={loading}
                   currentChannel={draftPayload?.channel || 'WhatsApp'}
                   onChannelChange={handleChannelChange}
+                  onUpload={handleUploadSuccess}
                 />
           )}
           {loading && <TypingIndicator />}
