@@ -1,4 +1,5 @@
 'use client';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
@@ -20,12 +21,6 @@ const AnalyticsIcon = () => (
   </svg>
 );
 
-const XLogo = () => (
-  <svg viewBox="0 0 24 24" fill="white">
-    <path d="M13.6 12L20 4H17.5L12.4 9.8 8.1 4H2L8.7 13.3 2 22H4.5L10 15.8 14.6 22H21L13.6 12ZM5.4 5.8H7.2L17.6 20.3H15.8L5.4 5.8Z"/>
-  </svg>
-);
-
 const navItems = [
   { href: '/',           label: 'Workspace', Icon: WorkspaceIcon },
   { href: '/campaigns',  label: 'Campaigns', Icon: CampaignIcon  },
@@ -34,41 +29,89 @@ const navItems = [
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const [mobileOpen, setMobileOpen] = useState(false);
+
+  // Auto-close sidebar on route change (mobile)
+  useEffect(() => {
+    setMobileOpen(false);
+  }, [pathname]);
+
+  // Prevent body scroll when mobile sidebar is open
+  useEffect(() => {
+    if (mobileOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => { document.body.style.overflow = ''; };
+  }, [mobileOpen]);
 
   return (
-    <aside className="sidebar">
-      {/* Logo */}
-      <div className="sidebar-logo" style={{ padding: '20px 18px 16px' }}>
-        <img src="/xeno-logo.png" alt="xenopulse" style={{ height: '38px', objectFit: 'contain' }} />
-      </div>
+    <>
+      {/* Hamburger button — visible only on mobile */}
+      <button
+        className="hamburger-btn"
+        onClick={() => setMobileOpen(true)}
+        aria-label="Open menu"
+      >
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+          <line x1="3" y1="6" x2="21" y2="6" />
+          <line x1="3" y1="12" x2="21" y2="12" />
+          <line x1="3" y1="18" x2="21" y2="18" />
+        </svg>
+      </button>
 
-      {/* Navigation */}
-      <nav className="sidebar-nav">
-        {navItems.map(({ href, label, Icon }) => {
-          const active = pathname === href;
-          return (
-            <Link
-              key={href}
-              href={href}
-              className={`nav-item${active ? ' active' : ''}`}
-            >
-              <Icon />
-              {label}
-            </Link>
-          );
-        })}
-      </nav>
+      {/* Overlay backdrop — visible only when mobile sidebar is open */}
+      {mobileOpen && (
+        <div className="sidebar-overlay" onClick={() => setMobileOpen(false)} />
+      )}
 
-      {/* AI Status */}
-      <div className="sidebar-footer">
-        <div className="ai-status">
-          <div className="status-avatar">
-            N
-            <span className="status-dot" />
-          </div>
-          <span className="ai-status-text">AI Connected</span>
+      <aside className={`sidebar ${mobileOpen ? 'mobile-open' : ''}`}>
+        {/* Close button — visible only on mobile */}
+        <button
+          className="sidebar-close-btn"
+          onClick={() => setMobileOpen(false)}
+          aria-label="Close menu"
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+            <line x1="18" y1="6" x2="6" y2="18" />
+            <line x1="6" y1="6" x2="18" y2="18" />
+          </svg>
+        </button>
+
+        {/* Logo */}
+        <div className="sidebar-logo" style={{ padding: '20px 18px 16px' }}>
+          <img src="/xeno-logo.png" alt="xenopulse" style={{ height: '38px', objectFit: 'contain' }} />
         </div>
-      </div>
-    </aside>
+
+        {/* Navigation */}
+        <nav className="sidebar-nav">
+          {navItems.map(({ href, label, Icon }) => {
+            const active = pathname === href;
+            return (
+              <Link
+                key={href}
+                href={href}
+                className={`nav-item${active ? ' active' : ''}`}
+              >
+                <Icon />
+                {label}
+              </Link>
+            );
+          })}
+        </nav>
+
+        {/* AI Status */}
+        <div className="sidebar-footer">
+          <div className="ai-status">
+            <div className="status-avatar">
+              N
+              <span className="status-dot" />
+            </div>
+            <span className="ai-status-text">AI Connected</span>
+          </div>
+        </div>
+      </aside>
+    </>
   );
 }
